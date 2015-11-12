@@ -1,0 +1,8 @@
+[package]
+name = "yaml-embed"
+version = "0.1.0"
+authors = ["Darin Minamoto <darinm223@gmail.com>"]
+
+[dependencies]
+yaml-rust = "*"
+regex = "*"
