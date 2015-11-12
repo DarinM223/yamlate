@@ -5,5 +5,4 @@ authors = ["Darin Minamoto <darinm223@gmail.com>"]
 
 [dependencies]
 yaml-rust = "*"
-regex = "*"
 lazy_static = "*"
