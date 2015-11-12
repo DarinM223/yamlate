@@ -51,10 +51,11 @@ fn split_string_operator(ch: char,
                          curr_str: String) -> Result<(String, WordState), String> {
 
     match curr_state {
-        &WordState::Variable | &WordState::Number | &WordState::String => {
+        &WordState::Variable | &WordState::Number => {
             variable_array.push(curr_str);
             Ok((ch.to_string(), WordState::Operator))
-        }
+        },
+        &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
         &WordState::Operator => {
             let new_str;
             if is_operator((curr_str.clone() + ch.to_string().as_str()).as_str()) {
@@ -217,10 +218,10 @@ fn test_spaces() {
 
 #[test]
 fn test_strings() {
-    let s = "( \"Hello world1234 \" + \"bye123\" )";
+    let s = "( \"Hello world1234 + \" + \"bye123\" )";
     match split_string(s) {
         Ok((variables, operators)) => {
-            let variable_result = vec!["Hello world1234 ", "bye123"];
+            let variable_result = vec!["Hello world1234 + ", "bye123"];
             for i in 0..variables.len() {
                 assert_eq!(variables[i], variable_result[i].to_string());
             }
