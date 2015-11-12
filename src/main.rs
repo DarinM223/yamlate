@@ -1,9 +1,13 @@
 #![feature(convert)]
 
-mod helpers;
-
 extern crate yaml_rust;
 extern crate regex;
+
+#[macro_use]
+extern crate lazy_static;
+
+mod helpers;
+
 use yaml_rust::{YamlLoader, YamlEmitter};
 
 fn main() {

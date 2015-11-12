@@ -1,21 +1,25 @@
+#[macro_use]
+
 use std::collections::HashMap;
+use std::sync::{Once, ONCE_INIT};
 use regex::Regex;
 
-// TODO: make into singleton
-fn operators() -> HashMap<String, i32> {
-    let mut hash_map = HashMap::new();
-    hash_map.insert("=".to_string(), 0);
-    hash_map.insert("==".to_string(), 1);
-    hash_map.insert("!=".to_string(), 1);
-    hash_map.insert("+".to_string(), 2);
-    hash_map.insert("*".to_string(), 3);
-    hash_map.insert("/".to_string(), 3);
-    hash_map.insert("%".to_string(), 3);
-    hash_map.insert("^".to_string(), 4);
-    hash_map.insert("(".to_string(), 5);
-    hash_map.insert(")".to_string(), 5);
+lazy_static! {
+    static ref OPERATORS: HashMap<String, i32> = {
+        let mut hash_map = HashMap::new();
+        hash_map.insert("=".to_string(), 0);
+        hash_map.insert("==".to_string(), 1);
+        hash_map.insert("!=".to_string(), 1);
+        hash_map.insert("+".to_string(), 2);
+        hash_map.insert("*".to_string(), 3);
+        hash_map.insert("/".to_string(), 3);
+        hash_map.insert("%".to_string(), 3);
+        hash_map.insert("^".to_string(), 4);
+        hash_map.insert("(".to_string(), 5);
+        hash_map.insert(")".to_string(), 5);
 
-    hash_map
+        hash_map
+    };
 }
 
 fn is_keyword(string: &str) -> bool {
@@ -30,11 +34,11 @@ fn is_keyword(string: &str) -> bool {
 }
 
 fn is_operator(string: &str) -> bool {
-    operators().contains_key(string)
+    OPERATORS.contains_key(string)
 }
 
 fn operator_precedence(string: &str) -> i32 {
-    match operators().get(string) {
+    match OPERATORS.get(string) {
         Some(result) => *result,
         None => -1,
     }
@@ -51,17 +55,6 @@ fn is_split_character(ch: char) -> bool {
 
 /// Removes whitespace, tabs, and newlines and splits the string based on them
 pub fn split_string(s: &str) -> Vec<String> {
-    let mut regex_str = r"^([ \t]+".to_string();
-    for (k, v) in operators().iter() {
-        if k.len() == 1 {
-            regex_str = regex_str + r"|\" + k;
-        } else {
-            regex_str = regex_str + "|" + k;
-        }
-    }
-
-    regex_str = regex_str + ")";
-    println!("{:?}", regex_str);
     let re = Regex::new(r"[ \t\n]+").unwrap();
     re.split(s).map(|s| s.to_string()).collect::<Vec<_>>()
 }
@@ -87,9 +80,8 @@ pub fn split_word(s: &str) -> Result<(Vec<String>, Vec<String>), String> {
     for ch in s.to_string().chars() {
         if ch.is_alphabetic() {
             match curr_state {
-                WordState::Variable => curr_str = curr_str + ch.to_string().as_str(),
+                WordState::Variable | WordState::String => curr_str = curr_str + ch.to_string().as_str(),
                 WordState::Number => return Err("Number cannot have a letter after it".to_string()),
-                WordState::String => curr_str = curr_str + ch.to_string().as_str(),
                 WordState::Operator => {
                     operator_array.push(curr_str);
                     curr_str = String::new() + ch.to_string().as_str();
@@ -102,9 +94,8 @@ pub fn split_word(s: &str) -> Result<(Vec<String>, Vec<String>), String> {
             }
         } else if ch.is_digit(10) {
             match curr_state {
-                WordState::Variable => curr_str = curr_str + ch.to_string().as_str(),
-                WordState::Number => curr_str = curr_str + ch.to_string().as_str(),
-                WordState::String => curr_str = curr_str + ch.to_string().as_str(),
+                WordState::Variable | WordState::Number | WordState::String => 
+                    curr_str = curr_str + ch.to_string().as_str(),
                 WordState::Operator => {
                     operator_array.push(curr_str);
                     curr_str = String::new() + ch.to_string().as_str();
@@ -117,17 +108,7 @@ pub fn split_word(s: &str) -> Result<(Vec<String>, Vec<String>), String> {
             }
         } else {
             match curr_state {
-                WordState::Variable => {
-                    variable_array.push(curr_str);
-                    curr_str = String::new() + ch.to_string().as_str();
-                    curr_state = WordState::Operator;
-                },
-                WordState::Number => {
-                    variable_array.push(curr_str);
-                    curr_str = String::new() + ch.to_string().as_str();
-                    curr_state = WordState::Operator;
-                },
-                WordState::String => {
+                WordState::Variable | WordState::Number | WordState::String => {
                     variable_array.push(curr_str);
                     curr_str = String::new() + ch.to_string().as_str();
                     curr_state = WordState::Operator;
@@ -151,13 +132,11 @@ pub fn split_word(s: &str) -> Result<(Vec<String>, Vec<String>), String> {
 
     if curr_str.len() > 0 {
         match curr_state {
-            WordState::Variable => variable_array.push(curr_str),
-            WordState::Number => variable_array.push(curr_str),
-            WordState::String => variable_array.push(curr_str),
+            WordState::Variable | WordState::Number | WordState::String => 
+                variable_array.push(curr_str),
             WordState::Operator => operator_array.push(curr_str),
             WordState::None => {},
         }
-
     }
 
     return Ok((variable_array, operator_array));
@@ -224,6 +203,24 @@ fn test_split_word_paren() {
                 assert_eq!(variables[i], variable_result[i].to_string());
             }
             let operator_result = vec!["(", "+", "(", "-", ")", "+", "(", "*", ")", ")"];
+            for i in 0..operators.len() {
+                assert_eq!(operators[i], operator_result[i].to_string());
+            }
+        },
+        Err(e) => println!("{:?}", e),
+    }
+}
+
+#[test]
+fn test_split_word_equals() {
+    let s = "(a==(2-b)+(3!=5))";
+    match split_word(s) {
+        Ok((variables, operators)) => {
+            let variable_result = vec!["a", "2", "b", "3", "5"];
+            for i in 0..variables.len() {
+                assert_eq!(variables[i], variable_result[i].to_string());
+            }
+            let operator_result = vec!["(", "==", "(", "-", ")", "+", "(", "!=", ")", ")"];
             for i in 0..operators.len() {
                 assert_eq!(operators[i], operator_result[i].to_string());
             }
