@@ -70,6 +70,26 @@ fn split_string_operator(ch: char,
     }
 }
 
+fn split_string_quote(ch: char,
+                      variable_array: &mut Vec<String>,
+                      operator_array: &mut Vec<String>,
+                      curr_state: &WordState,
+                      curr_str: String) -> Result<(String, WordState), String> {
+
+    match curr_state {
+        &WordState::String => {
+            variable_array.push(curr_str);
+            Ok((String::new(), WordState::None))
+        },
+        &WordState::Number | &WordState::Variable => Err("Cannot create a string after invalid type".to_string()),
+        &WordState::Operator => {
+            operator_array.push(curr_str);
+            Ok((String::new(), WordState::String))
+        },
+        &WordState::None => Ok((curr_str, WordState::String)),
+    }
+}
+
 /// Parses a word split from split_string and detects operators 
 /// Returns an array of variables/constants and an array of operators
 /// TODO: clean up this mess
@@ -87,8 +107,16 @@ pub fn split_string(s: &str) -> Result<(Vec<String>, Vec<String>), String> {
             split_fn = split_string_letter;
         } else if ch.is_digit(10) {
             split_fn = split_string_digit;
-        } else if ch == ' ' || ch == '\t' { // ignore spaces and tabs
-            continue;
+        } else if ch == ' ' || ch == '\t' { // ignore spaces and tabs except for inside a string
+            match curr_state {
+                WordState::String => {
+                    curr_str = curr_str + ch.to_string().as_str();
+                    continue;
+                }
+                _ => continue,
+            }
+        } else if ch == '\"' {
+            split_fn = split_string_quote;
         } else {
             split_fn = split_string_operator;
         }
@@ -116,7 +144,7 @@ pub fn split_string(s: &str) -> Result<(Vec<String>, Vec<String>), String> {
 }
 
 #[test]
-fn test_split_string_no_paren() {
+fn test_no_paren() {
     let s = "a+2-b+3";
     match split_string(s) {
         Ok((variables, operators)) => {
@@ -134,7 +162,7 @@ fn test_split_string_no_paren() {
 }
 
 #[test]
-fn test_split_string_paren() {
+fn test_paren() {
     let s = "(a+(2-b)+(3*5))";
     match split_string(s) {
         Ok((variables, operators)) => {
@@ -152,7 +180,7 @@ fn test_split_string_paren() {
 }
 
 #[test]
-fn test_split_string_equals() {
+fn test_equals() {
     let s = "(a==(2-b)+(3!=5))";
     match split_string(s) {
         Ok((variables, operators)) => {
@@ -170,7 +198,7 @@ fn test_split_string_equals() {
 }
 
 #[test]
-fn test_split_string_spaces() {
+fn test_spaces() {
     let s = "( a + 2 - \t b \t^ 2 ) == 5";
     match split_string(s) {
         Ok((variables, operators)) => {
@@ -179,6 +207,24 @@ fn test_split_string_spaces() {
                 assert_eq!(variables[i], variable_result[i].to_string());
             }
             let operator_result = vec!["(", "+", "-", "^", ")", "==" ];
+            for i in 0..operators.len() {
+                assert_eq!(operators[i], operator_result[i].to_string());
+            }
+        },
+        Err(e) => println!("{:?}", e),
+    }
+}
+
+#[test]
+fn test_strings() {
+    let s = "( \"Hello world1234 \" + \"bye123\" )";
+    match split_string(s) {
+        Ok((variables, operators)) => {
+            let variable_result = vec!["Hello world1234 ", "bye123"];
+            for i in 0..variables.len() {
+                assert_eq!(variables[i], variable_result[i].to_string());
+            }
+            let operator_result = vec!["(", "+", ")" ];
             for i in 0..operators.len() {
                 assert_eq!(operators[i], operator_result[i].to_string());
             }
