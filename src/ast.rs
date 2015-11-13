@@ -1,3 +1,5 @@
+#[derive(Debug)]
+#[derive(Eq, PartialEq)]
 pub enum DataType {
     Variable(String),
     Number(String),

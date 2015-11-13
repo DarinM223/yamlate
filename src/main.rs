@@ -6,6 +6,7 @@ extern crate yaml_rust;
 extern crate lazy_static;
 
 mod helpers;
+mod ast;
 mod split_string;
 
 use yaml_rust::{YamlLoader, YamlEmitter};
