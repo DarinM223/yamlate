@@ -12,8 +12,8 @@ lazy_static! {
         hash_map.insert("/".to_string(), 3);
         hash_map.insert("%".to_string(), 3);
         hash_map.insert("^".to_string(), 4);
-        hash_map.insert("(".to_string(), 5);
-        hash_map.insert(")".to_string(), 5);
+        hash_map.insert("(".to_string(), -1); // "(" ignores operator precedence
+        hash_map.insert(")".to_string(), 5); 
 
         hash_map
     };
