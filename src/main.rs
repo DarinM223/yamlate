@@ -9,7 +9,7 @@ extern crate lazy_static;
 mod helpers;
 mod ast;
 mod parser;
-mod split_string;
+mod lexer;
 
 use yaml_rust::{YamlLoader, YamlEmitter};
 

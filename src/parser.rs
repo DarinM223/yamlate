@@ -174,6 +174,7 @@ fn test_parse_to_ast() {
     // !     &&
     // |    /  \
     // 5   2    6
+
     let mut parser = Parser::new();
 
     let mut variables = VecDeque::new();
