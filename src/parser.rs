@@ -20,7 +20,6 @@ impl Parser {
 
     /// collapse_stacks combines the current variable and operator stacks into an AST
     /// and pushes the result back onto the variable stack
-    /// TODO: Implement this
     fn collapse_stacks(&mut self) {
         let mut paren_count = 0;
         while !self.op_stack.is_empty() {
@@ -29,6 +28,11 @@ impl Parser {
             match operator.as_str() {
                 ")" => paren_count += 1,
                 "(" => paren_count -= 1, 
+
+                "!" => {
+                    let var = self.var_stack.pop_front().unwrap();
+                    self.var_stack.push_front(AST::Not(Box::new(var)));
+                },
 
                 // Double parameter operators
                 _ => {
@@ -43,6 +47,8 @@ impl Parser {
                         "/" => AST::Divide(Box::new(var1), Box::new(var2)),
                         "%" => AST::Modulo(Box::new(var1), Box::new(var2)),
                         "^" => AST::Exponent(Box::new(var1), Box::new(var2)),
+                        "&&" => AST::And(Box::new(var1), Box::new(var2)),
+                        "||" => AST::Or(Box::new(var1), Box::new(var2)),
                         _ => AST::None,
                     };
 
@@ -62,8 +68,10 @@ impl Parser {
                         variables: &mut VecDeque<AST>,
                         operators: &mut VecDeque<String>)
                         -> Option<AST> {
-        while !variables.is_empty() && !operators.is_empty() {
-            self.var_stack.push_front(variables.pop_back().unwrap());
+        while !operators.is_empty() {
+            if !variables.is_empty() {
+                self.var_stack.push_front(variables.pop_back().unwrap());
+            }
 
             let mut lower_precedence = false;
 
@@ -72,7 +80,7 @@ impl Parser {
             // an operator with precedence -1 ignores precedence rules
             let operator = operators.pop_back().unwrap();
 
-            {
+            if self.op_stack.len() > 0 {
                 let front_operator = self.op_stack.front().unwrap();
                 if operator_precedence(operator.as_str()) <
                    operator_precedence(front_operator.as_str()) &&
@@ -141,4 +149,31 @@ fn test_collapse_stacks() {
             assert!(false);
         }
     }
+}
+
+#[test]
+fn test_parse_to_ast() {
+    // test ast generation for `1 + !5 ^ (2 && 6) * 2`
+    let mut parser = Parser::new();
+
+    let mut variables = VecDeque::new();
+    let mut operators = VecDeque::new();
+
+    variables.push_front(AST::Number("1".to_string()));
+    variables.push_front(AST::Number("5".to_string()));
+    variables.push_front(AST::Number("2".to_string()));
+    variables.push_front(AST::Number("6".to_string()));
+    variables.push_front(AST::Number("2".to_string()));
+
+    operators.push_front("+".to_string());
+    operators.push_front("!".to_string());
+    operators.push_front("^".to_string());
+    operators.push_front("(".to_string());
+    operators.push_front("&&".to_string());
+    operators.push_front(")".to_string());
+    operators.push_front("*".to_string());
+
+    let result = parser.parse_to_ast(&mut variables, &mut operators);
+
+    println!("{:?}", result);
 }

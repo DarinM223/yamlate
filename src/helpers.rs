@@ -4,16 +4,27 @@ use std::sync::{Once, ONCE_INIT};
 lazy_static! {
     static ref OPERATORS: HashMap<String, i32> = {
         let mut hash_map = HashMap::new();
-        hash_map.insert("=".to_string(), 0);
-        hash_map.insert("==".to_string(), 1);
-        hash_map.insert("!=".to_string(), 1);
-        hash_map.insert("+".to_string(), 2);
-        hash_map.insert("*".to_string(), 3);
-        hash_map.insert("/".to_string(), 3);
-        hash_map.insert("%".to_string(), 3);
-        hash_map.insert("^".to_string(), 4);
         hash_map.insert("(".to_string(), -1); // "(" ignores operator precedence
-        hash_map.insert(")".to_string(), 5); 
+        hash_map.insert(")".to_string(), 8); 
+
+        hash_map.insert("!".to_string(), 7);
+
+        hash_map.insert("^".to_string(), 6);
+
+        hash_map.insert("*".to_string(), 5);
+        hash_map.insert("/".to_string(), 5);
+        hash_map.insert("%".to_string(), 5);
+
+        hash_map.insert("+".to_string(), 4);
+        hash_map.insert("-".to_string(), 4);
+
+        hash_map.insert("!=".to_string(), 3);
+        hash_map.insert("==".to_string(), 3);
+
+        hash_map.insert("&&".to_string(), 2);
+        hash_map.insert("||".to_string(), 1);
+
+        hash_map.insert("=".to_string(), 0);
 
         hash_map
     };

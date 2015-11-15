@@ -8,6 +8,9 @@ pub enum AST {
     Divide(Box<AST>, Box<AST>),
     Modulo(Box<AST>, Box<AST>),
     Exponent(Box<AST>, Box<AST>),
+    And(Box<AST>, Box<AST>),
+    Or(Box<AST>, Box<AST>),
+    Not(Box<AST>),
 
     Variable(String),
     Number(String),
