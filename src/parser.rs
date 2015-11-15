@@ -29,26 +29,25 @@ impl Parser {
             match operator.as_str() {
                 ")" => paren_count += 1,
                 "(" => paren_count -= 1, 
-                "+" => {
+
+                // Double parameter operators
+                _ => {
                     let var1 = self.var_stack.pop_front().unwrap();
                     let var2 = self.var_stack.pop_front().unwrap();
 
-                    self.var_stack.push_front(AST::Plus(Box::new(var1), Box::new(var2)));
-                }
-                "-" => {
-                    let var1 = self.var_stack.pop_front().unwrap();
-                    let var2 = self.var_stack.pop_front().unwrap();
+                    let ast_node = match operator.as_str() {
+                        "=" => AST::Assign(Box::new(var1), Box::new(var2)),
+                        "+" => AST::Plus(Box::new(var1), Box::new(var2)),
+                        "-" => AST::Minus(Box::new(var1), Box::new(var2)),
+                        "*" => AST::Times(Box::new(var1), Box::new(var2)),
+                        "/" => AST::Divide(Box::new(var1), Box::new(var2)),
+                        "%" => AST::Modulo(Box::new(var1), Box::new(var2)),
+                        "^" => AST::Exponent(Box::new(var1), Box::new(var2)),
+                        _ => AST::None,
+                    };
 
-                    self.var_stack.push_front(AST::Minus(Box::new(var1), Box::new(var2)));
+                    self.var_stack.push_front(ast_node);
                 }
-                "*" => {
-                    let var1 = self.var_stack.pop_front().unwrap();
-                    let var2 = self.var_stack.pop_front().unwrap();
-
-                    self.var_stack.push_front(AST::Times(Box::new(var1), Box::new(var2)));
-                }
-
-                _ => {}
             }
         }
 

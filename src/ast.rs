@@ -12,4 +12,5 @@ pub enum AST {
     Variable(String),
     Number(String),
     String(String),
+    None,
 }
