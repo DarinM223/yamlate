@@ -20,9 +20,11 @@ impl Parser {
 
     /// collapse_stacks combines the current variable and operator stacks into an AST
     /// and pushes the result back onto the variable stack
-    fn collapse_stacks(&mut self) {
+    fn collapse_stacks(&mut self, add_op_precedence: i32) {
         let mut paren_count = 0;
-        while !self.op_stack.is_empty() {
+        while !self.op_stack.is_empty() &&
+              (add_op_precedence < operator_precedence(self.op_stack.front().unwrap()) ||
+               paren_count > 0) {
             let operator = self.op_stack.pop_front().unwrap();
 
             match operator.as_str() {
@@ -32,7 +34,7 @@ impl Parser {
                 "!" => {
                     let var = self.var_stack.pop_front().unwrap();
                     self.var_stack.push_front(AST::Not(Box::new(var)));
-                },
+                }
 
                 // Double parameter operators
                 _ => {
@@ -40,15 +42,15 @@ impl Parser {
                     let var2 = self.var_stack.pop_front().unwrap();
 
                     let ast_node = match operator.as_str() {
-                        "=" => AST::Assign(Box::new(var1), Box::new(var2)),
-                        "+" => AST::Plus(Box::new(var1), Box::new(var2)),
-                        "-" => AST::Minus(Box::new(var1), Box::new(var2)),
-                        "*" => AST::Times(Box::new(var1), Box::new(var2)),
-                        "/" => AST::Divide(Box::new(var1), Box::new(var2)),
-                        "%" => AST::Modulo(Box::new(var1), Box::new(var2)),
-                        "^" => AST::Exponent(Box::new(var1), Box::new(var2)),
-                        "&&" => AST::And(Box::new(var1), Box::new(var2)),
-                        "||" => AST::Or(Box::new(var1), Box::new(var2)),
+                        "=" => AST::Assign(Box::new(var2), Box::new(var1)),
+                        "+" => AST::Plus(Box::new(var2), Box::new(var1)),
+                        "-" => AST::Minus(Box::new(var2), Box::new(var1)),
+                        "*" => AST::Times(Box::new(var2), Box::new(var1)),
+                        "/" => AST::Divide(Box::new(var2), Box::new(var1)),
+                        "%" => AST::Modulo(Box::new(var2), Box::new(var1)),
+                        "^" => AST::Exponent(Box::new(var2), Box::new(var1)),
+                        "&&" => AST::And(Box::new(var2), Box::new(var1)),
+                        "||" => AST::Or(Box::new(var2), Box::new(var1)),
                         _ => AST::None,
                     };
 
@@ -69,11 +71,8 @@ impl Parser {
                         operators: &mut VecDeque<String>)
                         -> Option<AST> {
         while !operators.is_empty() {
-            if !variables.is_empty() {
-                self.var_stack.push_front(variables.pop_back().unwrap());
-            }
-
             let mut lower_precedence = false;
+            let mut op_precedence = -2;
 
             // check if the next operator has greater precedence than the
             // current operator on the stack
@@ -86,17 +85,22 @@ impl Parser {
                    operator_precedence(front_operator.as_str()) &&
                    operator_precedence(operator.as_str()) != -1 {
                     lower_precedence = true;
+                    op_precedence = operator_precedence(operator.as_str());
                 }
             }
 
             if lower_precedence {
-                self.collapse_stacks();
+                self.collapse_stacks(op_precedence);
+            }
+
+            if !variables.is_empty() && operator != "(" && operator != ")" {
+                self.var_stack.push_front(variables.pop_back().unwrap());
             }
 
             self.op_stack.push_front(operator);
         }
 
-        self.collapse_stacks();
+        self.collapse_stacks(-2);
 
         self.var_stack.pop_front()
     }
@@ -105,6 +109,12 @@ impl Parser {
 #[test]
 fn test_collapse_stacks() {
     // test ast generation for `1 * (2 + 3)`
+    // expected result:
+    //      *
+    //    /   \
+    //   1     +
+    //        / \
+    //       2   3
 
     let mut parser = Parser::new();
 
@@ -117,7 +127,7 @@ fn test_collapse_stacks() {
     parser.op_stack.push_front("+".to_string());
     parser.op_stack.push_front(")".to_string());
 
-    parser.collapse_stacks();
+    parser.collapse_stacks(-2);
 
     assert_eq!(parser.var_stack.len(), 1);
 
@@ -125,18 +135,18 @@ fn test_collapse_stacks() {
         Some(root) => {
             match root {
                 AST::Times(box leaf1, box leaf2) => {
-                    match leaf1 {
+                    assert_eq!(leaf1, AST::Number("1".to_string()));
+
+                    match leaf2 {
                         AST::Plus(box leaf1, box leaf2) => {
-                            assert_eq!(leaf1, AST::Number("3".to_string()));
-                            assert_eq!(leaf2, AST::Number("2".to_string()));
+                            assert_eq!(leaf1, AST::Number("2".to_string()));
+                            assert_eq!(leaf2, AST::Number("3".to_string()));
                         }
                         _ => {
-                            println!("Left child node is not a plus operator");
+                            println!("Right child node is not a plus operator");
                             assert!(false);
                         }
                     }
-
-                    assert_eq!(leaf2, AST::Number("1".to_string()));
                 }
                 _ => {
                     println!("Root node is not a times operator");
@@ -154,6 +164,16 @@ fn test_collapse_stacks() {
 #[test]
 fn test_parse_to_ast() {
     // test ast generation for `1 + !5 ^ (2 && 6) * 2`
+    // expected result:
+    //     +
+    //   /   \
+    //  1     *
+    //      /   \
+    //    ^       2
+    //  /   \
+    // !     &&
+    // |    /  \
+    // 5   2    6
     let mut parser = Parser::new();
 
     let mut variables = VecDeque::new();
@@ -175,5 +195,52 @@ fn test_parse_to_ast() {
 
     let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-    println!("{:?}", result);
+    match result.unwrap() {
+        AST::Plus(box leaf1, box leaf2) => {
+            assert_eq!(leaf1, AST::Number("1".to_string()));
+
+            match leaf2 {
+                AST::Times(box leaf1, box leaf2) => {
+                    assert_eq!(leaf2, AST::Number("2".to_string()));
+
+                    match leaf1 {
+                        AST::Exponent(box leaf1, box leaf2) => {
+                            match leaf1 {
+                                AST::Not(box leaf) => {
+                                    assert_eq!(leaf, AST::Number("5".to_string()));
+                                }
+                                _ => {
+                                    println!("Left grand-grand child is not the not operator");
+                                    assert!(false);
+                                }
+                            }
+
+                            match leaf2 {
+                                AST::And(box leaf1, box leaf2) => {
+                                    assert_eq!(leaf1, AST::Number("2".to_string()));
+                                    assert_eq!(leaf2, AST::Number("6".to_string()));
+                                }
+                                _ => {
+                                    println!("Right grand-grand child is not the and operator");
+                                    assert!(false);
+                                }
+                            }
+                        }
+                        _ => {
+                            println!("Left grandchild is not the exponent operator");
+                            assert!(false);
+                        }
+                    }
+                }
+                _ => {
+                    println!("Right child is not the times operator");
+                    assert!(false);
+                }
+            }
+        }
+        _ => {
+            println!("Leaf node is not the plus operator");
+            assert!(false);
+        }
+    }
 }
