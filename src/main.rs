@@ -10,6 +10,8 @@ mod helpers;
 mod ast;
 mod parser;
 mod lexer;
+mod environment;
+mod evaluator;
 
 use yaml_rust::{YamlLoader, YamlEmitter};
 
