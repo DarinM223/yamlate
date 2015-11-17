@@ -1,5 +1,6 @@
 #[derive(Debug)]
 #[derive(Eq, PartialEq)]
+#[derive(Clone)]
 pub enum AST {
     Assign(Box<AST>, Box<AST>),
     Plus(Box<AST>, Box<AST>),

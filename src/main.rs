@@ -1,5 +1,6 @@
 #![feature(convert)]
 #![feature(box_patterns)]
+#![feature(box_syntax)]
 
 extern crate yaml_rust;
 

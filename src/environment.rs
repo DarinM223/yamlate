@@ -1,7 +1,7 @@
 use ast::AST;
 use std::collections::HashMap;
 
-pub trait Environment {
+pub trait IEnvironment {
     fn get(&self, var: String) -> Option<&AST>;
     fn set(&mut self, var: String, value: AST);
     fn push(&mut self);
@@ -9,17 +9,17 @@ pub trait Environment {
     fn len(&self) -> usize;
 }
 
-pub struct EnvironmentImpl {
+pub struct Environment {
     stack: Vec<HashMap<String, AST>>,
 }
 
-impl EnvironmentImpl {
+impl Environment {
     pub fn new() -> Self {
-        EnvironmentImpl { stack: vec![HashMap::new()] }
+        Environment { stack: vec![HashMap::new()] }
     }
 }
 
-impl Environment for EnvironmentImpl {
+impl IEnvironment for Environment {
     fn get(&self, var: String) -> Option<&AST> {
         for i in (0..self.stack.len()).rev() {
             match self.stack[i].get(&var) {
@@ -55,13 +55,13 @@ impl Environment for EnvironmentImpl {
 
 #[test]
 fn test_bad_value_empty_stack() {
-    let mut env = EnvironmentImpl::new();
+    let mut env = Environment::new();
     assert_eq!(env.get("Hello".to_string()), None);
 }
 
 #[test]
 fn test_bad_value_nonempty_stack() {
-    let mut env = EnvironmentImpl::new();
+    let mut env = Environment::new();
     env.set("hello".to_string(), AST::Number("2".to_string()));
     env.push();
     env.set("world".to_string(), AST::Number("3".to_string()));
@@ -70,7 +70,7 @@ fn test_bad_value_nonempty_stack() {
 
 #[test]
 fn test_good_value_one_stack() {
-    let mut env = EnvironmentImpl::new();
+    let mut env = Environment::new();
     env.set("hello".to_string(), AST::Number("2".to_string()));
     env.set("world".to_string(), AST::Number("3".to_string()));
     assert_eq!(env.get("world".to_string()),
@@ -79,14 +79,14 @@ fn test_good_value_one_stack() {
 
 #[test]
 fn test_push_adds_environment() {
-    let mut env = EnvironmentImpl::new();
+    let mut env = Environment::new();
     env.push();
     assert_eq!(env.len(), 2);
 }
 
 #[test]
 fn test_pop_removes_environment() {
-    let mut env = EnvironmentImpl::new();
+    let mut env = Environment::new();
     env.push();
     env.pop();
     assert_eq!(env.len(), 1);
@@ -94,7 +94,7 @@ fn test_pop_removes_environment() {
 
 #[test]
 fn test_good_value_multiple_stacks() {
-    let mut env = EnvironmentImpl::new();
+    let mut env = Environment::new();
     env.set("hello".to_string(), AST::Number("2".to_string()));
     env.push();
     env.set("world".to_string(), AST::Number("3".to_string()));
