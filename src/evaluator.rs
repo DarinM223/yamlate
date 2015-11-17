@@ -74,7 +74,7 @@ fn test_arith_ast() {
     //    /   \
     //   3     2
     // is "35"
-    
+
     let mut env = Environment::new();
     let mut evaluator = Evaluator::new(&mut env);
 
@@ -83,6 +83,34 @@ fn test_arith_ast() {
                                                       box AST::Number("2".to_string())),
                                        box AST::Number("6".to_string())));
 
+    let result = evaluator.evaluate(ast);
+
+    assert_eq!(result, Some(AST::Number("35".to_string())));
+}
+
+#[test]
+fn test_variable_ast() {
+    // Test that the result for ast:
+    //      *
+    //    /   \
+    //   a     +
+    //       /   \
+    //      -     d
+    //    /   \
+    //   b     c
+    // is "35" when a is 5, b is 3, c is 2, and d is 6
+    let mut env = Environment::new();
+    env.set("a".to_string(), AST::Number("5".to_string()));
+    env.set("b".to_string(), AST::Number("3".to_string()));
+    env.set("c".to_string(), AST::Number("2".to_string()));
+    env.set("d".to_string(), AST::Number("6".to_string()));
+
+    let mut evaluator = Evaluator::new(&mut env);
+
+    let ast = AST::Times(box AST::Variable("a".to_string()),
+                         box AST::Plus(box AST::Minus(box AST::Variable("b".to_string()),
+                                                      box AST::Variable("c".to_string())),
+                                       box AST::Variable("d".to_string())));
     let result = evaluator.evaluate(ast);
 
     assert_eq!(result, Some(AST::Number("35".to_string())));

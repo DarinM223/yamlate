@@ -101,3 +101,18 @@ fn test_good_value_multiple_stacks() {
     assert_eq!(env.get("hello".to_string()),
                Some(&AST::Number("2".to_string())));
 }
+
+#[test]
+fn test_override_value() {
+    let mut env = Environment::new();
+    env.set("hello".to_string(), AST::Number("2".to_string()));
+    env.push();
+    env.set("hello".to_string(), AST::Number("3".to_string()));
+
+    assert_eq!(env.get("hello".to_string()),
+               Some(&AST::Number("3".to_string())));
+
+    env.pop();
+    assert_eq!(env.get("hello".to_string()),
+               Some(&AST::Number("2".to_string())));
+}

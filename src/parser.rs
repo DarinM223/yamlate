@@ -131,34 +131,11 @@ fn test_collapse_stacks() {
 
     assert_eq!(parser.var_stack.len(), 1);
 
-    match parser.var_stack.pop_front().take() {
-        Some(root) => {
-            match root {
-                AST::Times(box leaf1, box leaf2) => {
-                    assert_eq!(leaf1, AST::Number("1".to_string()));
+    let expected_val = Some(AST::Times(box AST::Number("1".to_string()),
+                                       box AST::Plus(box AST::Number("2".to_string()),
+                                                     box AST::Number("3".to_string()))));
 
-                    match leaf2 {
-                        AST::Plus(box leaf1, box leaf2) => {
-                            assert_eq!(leaf1, AST::Number("2".to_string()));
-                            assert_eq!(leaf2, AST::Number("3".to_string()));
-                        }
-                        _ => {
-                            println!("Right child node is not a plus operator");
-                            assert!(false);
-                        }
-                    }
-                }
-                _ => {
-                    println!("Root node is not a times operator");
-                    assert!(false);
-                }
-            }
-        }
-        None => {
-            println!("Failed to unparse the first element");
-            assert!(false);
-        }
-    }
+    assert_eq!(parser.var_stack.pop_front(), expected_val);
 }
 
 #[test]
@@ -196,52 +173,11 @@ fn test_parse_to_ast() {
 
     let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-    match result.unwrap() {
-        AST::Plus(box leaf1, box leaf2) => {
-            assert_eq!(leaf1, AST::Number("1".to_string()));
+    let expected_val = Some(AST::Plus(box AST::Number("1".to_string()),
+                                      box AST::Times(box AST::Exponent(box AST::Not(box AST::Number("5".to_string())),
+                                                                       box AST::And(box AST::Number("2".to_string()),
+                                                                                    box AST::Number("6".to_string()))),
+                                                     box AST::Number("2".to_string()))));
 
-            match leaf2 {
-                AST::Times(box leaf1, box leaf2) => {
-                    assert_eq!(leaf2, AST::Number("2".to_string()));
-
-                    match leaf1 {
-                        AST::Exponent(box leaf1, box leaf2) => {
-                            match leaf1 {
-                                AST::Not(box leaf) => {
-                                    assert_eq!(leaf, AST::Number("5".to_string()));
-                                }
-                                _ => {
-                                    println!("Left grand-grand child is not the not operator");
-                                    assert!(false);
-                                }
-                            }
-
-                            match leaf2 {
-                                AST::And(box leaf1, box leaf2) => {
-                                    assert_eq!(leaf1, AST::Number("2".to_string()));
-                                    assert_eq!(leaf2, AST::Number("6".to_string()));
-                                }
-                                _ => {
-                                    println!("Right grand-grand child is not the and operator");
-                                    assert!(false);
-                                }
-                            }
-                        }
-                        _ => {
-                            println!("Left grandchild is not the exponent operator");
-                            assert!(false);
-                        }
-                    }
-                }
-                _ => {
-                    println!("Right child is not the times operator");
-                    assert!(false);
-                }
-            }
-        }
-        _ => {
-            println!("Leaf node is not the plus operator");
-            assert!(false);
-        }
-    }
+    assert_eq!(result, expected_val);
 }
