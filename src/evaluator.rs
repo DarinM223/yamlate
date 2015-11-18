@@ -1,6 +1,7 @@
 use ast::AST;
 use environment::{IEnvironment, Environment};
 use std::collections::HashMap;
+use helpers::ast_to_operator;
 
 pub struct Evaluator<'a> {
     env: &'a mut IEnvironment,
@@ -34,18 +35,19 @@ impl<'a> Evaluator<'a> {
     /// evaluate evaluates the given AST and returns an AST 
     /// of the result 
     pub fn evaluate(&mut self, ast: AST) -> Option<AST> {
+        let op = ast_to_operator(&ast);
         match ast {
             AST::Variable(name) => match self.env.get(name) {
                 Some(val) => Some(val.clone()),
                 None => None,
             },
-            AST::Number(val) => Some(AST::Number(val)),
-            AST::String(s) => Some(AST::String(s)),
-            AST::Plus(box child1, box child2) => self.arithmetic_operation("+", child1, child2),
-            AST::Minus(box child1, box child2) => self.arithmetic_operation("-", child1, child2),
-            AST::Times(box child1, box child2) => self.arithmetic_operation("*", child1, child2),
-            AST::Divide(box child1, box child2) => self.arithmetic_operation("/", child1, child2),
-            AST::Modulo(box child1, box child2) => self.arithmetic_operation("%", child1, child2),
+            ast @ AST::Number(_) | ast @ AST::String(_) => Some(ast),
+            AST::Plus(box child1, box child2) |
+            AST::Minus(box child1, box child2) |
+            AST::Times(box child1, box child2) |
+            AST::Divide(box child1, box child2) |
+            AST::Modulo(box child1, box child2) =>
+                self.arithmetic_operation(op.as_str(), child1, child2),
             _ => Some(AST::None),
         }
     }

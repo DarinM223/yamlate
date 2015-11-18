@@ -3,6 +3,7 @@ use helpers::is_operator;
 use std::str::FromStr;
 use std::collections::VecDeque;
 
+#[derive(Clone)]
 enum WordState {
     Variable,
     Number,
@@ -19,8 +20,8 @@ fn split_string_letter(ch: char,
                        curr_str: String)
                        -> Result<(String, WordState), String> {
     match curr_state {
-        &WordState::Variable => Ok((curr_str + ch.to_string().as_str(), WordState::Variable)),
-        &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
+        &ref state @ WordState::Variable | &ref state @ WordState::String =>
+            Ok((curr_str + ch.to_string().as_str(), state.clone())),
         &WordState::Number | &WordState::Decimal =>
             Err("Number cannot have a letter after it".to_string()),
         &WordState::Operator => {
@@ -38,10 +39,10 @@ fn split_string_digit(ch: char,
                       curr_str: String)
                       -> Result<(String, WordState), String> {
     match curr_state {
-        &WordState::Variable => Ok((curr_str + ch.to_string().as_str(), WordState::Variable)),
-        &WordState::Number => Ok((curr_str + ch.to_string().as_str(), WordState::Number)),
-        &WordState::Decimal => Ok((curr_str + ch.to_string().as_str(), WordState::Decimal)),
-        &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
+        &ref state @ WordState::Variable |
+        &ref state @ WordState::Number |
+        &ref state @ WordState::Decimal |
+        &ref state @ WordState::String => Ok((curr_str + ch.to_string().as_str(), state.clone())),
         &WordState::Operator => {
             operator_array.push_front(curr_str);
             Ok((ch.to_string(), WordState::Number))
