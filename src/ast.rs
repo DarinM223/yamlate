@@ -14,7 +14,7 @@ pub enum AST {
     Not(Box<AST>),
 
     Variable(String),
-    Number(String),
+    Number(i32),
     String(String),
     None,
 }

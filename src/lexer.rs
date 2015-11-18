@@ -1,5 +1,6 @@
 use ast::AST;
 use helpers::is_operator;
+use std::str::FromStr;
 use std::collections::VecDeque;
 
 enum WordState {
@@ -58,7 +59,7 @@ fn split_string_operator(ch: char,
             Ok((ch.to_string(), WordState::Operator))
         }
         &WordState::Number => {
-            variable_array.push_front(AST::Number(curr_str));
+            variable_array.push_front(AST::Number(curr_str.as_str().parse().unwrap()));
             Ok((ch.to_string(), WordState::Operator))
         }
         &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
@@ -148,7 +149,8 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), String
     if curr_str.len() > 0 {
         match curr_state {
             WordState::Variable => variable_array.push_front(AST::Variable(curr_str)),
-            WordState::Number => variable_array.push_front(AST::Number(curr_str)),
+            WordState::Number =>
+                variable_array.push_front(AST::Number(curr_str.as_str().parse().unwrap())),
             WordState::String => variable_array.push_front(AST::String(curr_str)),
             WordState::Operator => operator_array.push_front(curr_str),
             WordState::None => {}
@@ -164,9 +166,9 @@ fn test_no_paren() {
     match parse_string(s) {
         Ok((variables, operators)) => {
             let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_string()),
-                                                      AST::Number("2".to_string()),
+                                                      AST::Number(2),
                                                       AST::Variable("b".to_string()),
-                                                      AST::Number("3".to_string())]
+                                                      AST::Number(3)]
                                                      .into_iter()
                                                      .rev()
                                                      .collect();
@@ -189,10 +191,10 @@ fn test_paren() {
     match parse_string(s) {
         Ok((variables, operators)) => {
             let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_string()),
-                                                      AST::Number("2".to_string()),
+                                                      AST::Number(2),
                                                       AST::Variable("b".to_string()),
-                                                      AST::Number("3".to_string()),
-                                                      AST::Number("5".to_string())]
+                                                      AST::Number(3),
+                                                      AST::Number(5)]
                                                      .into_iter()
                                                      .rev()
                                                      .collect();
@@ -216,10 +218,10 @@ fn test_equals() {
     match parse_string(s) {
         Ok((variables, operators)) => {
             let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_string()),
-                                                      AST::Number("2".to_string()),
+                                                      AST::Number(2),
                                                       AST::Variable("b".to_string()),
-                                                      AST::Number("3".to_string()),
-                                                      AST::Number("5".to_string())]
+                                                      AST::Number(3),
+                                                      AST::Number(5)]
                                                      .into_iter()
                                                      .rev()
                                                      .collect();
@@ -243,10 +245,10 @@ fn test_spaces() {
     match parse_string(s) {
         Ok((variables, operators)) => {
             let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_string()),
-                                                      AST::Number("2".to_string()),
+                                                      AST::Number(2),
                                                       AST::Variable("b".to_string()),
-                                                      AST::Number("2".to_string()),
-                                                      AST::Number("5".to_string())]
+                                                      AST::Number(2),
+                                                      AST::Number(5)]
                                                      .into_iter()
                                                      .rev()
                                                      .collect();

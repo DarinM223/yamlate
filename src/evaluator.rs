@@ -1,6 +1,5 @@
 use ast::AST;
 use environment::{IEnvironment, Environment};
-use std::str::FromStr;
 use std::collections::HashMap;
 
 pub struct Evaluator<'a> {
@@ -20,16 +19,16 @@ impl<'a> Evaluator<'a> {
         let mut param2: i32 = 0;
 
         match result1 {
-            Some(AST::Number(val)) => param1 = val.as_str().parse().unwrap(),
+            Some(AST::Number(val)) => param1 = val,
             _ => return None,
         }
 
         match result2 {
-            Some(AST::Number(val)) => param2 = val.as_str().parse().unwrap(),
+            Some(AST::Number(val)) => param2 = val,
             _ => return None,
         }
 
-        Some(AST::Number(apply_arithmetic_operator(operator, param1, param2).to_string()))
+        Some(AST::Number(apply_arithmetic_operator(operator, param1, param2)))
     }
 
     /// evaluate evaluates the given AST and returns an AST 
@@ -78,14 +77,13 @@ fn test_arith_ast() {
     let mut env = Environment::new();
     let mut evaluator = Evaluator::new(&mut env);
 
-    let ast = AST::Times(box AST::Number("5".to_string()),
-                         box AST::Plus(box AST::Minus(box AST::Number("3".to_string()),
-                                                      box AST::Number("2".to_string())),
-                                       box AST::Number("6".to_string())));
+    let ast = AST::Times(box AST::Number(5),
+                         box AST::Plus(box AST::Minus(box AST::Number(3), box AST::Number(2)),
+                                       box AST::Number(6)));
 
     let result = evaluator.evaluate(ast);
 
-    assert_eq!(result, Some(AST::Number("35".to_string())));
+    assert_eq!(result, Some(AST::Number(35)));
 }
 
 #[test]
@@ -100,10 +98,10 @@ fn test_variable_ast() {
     //   b     c
     // is "35" when a is 5, b is 3, c is 2, and d is 6
     let mut env = Environment::new();
-    env.set("a".to_string(), AST::Number("5".to_string()));
-    env.set("b".to_string(), AST::Number("3".to_string()));
-    env.set("c".to_string(), AST::Number("2".to_string()));
-    env.set("d".to_string(), AST::Number("6".to_string()));
+    env.set("a".to_string(), AST::Number(5));
+    env.set("b".to_string(), AST::Number(3));
+    env.set("c".to_string(), AST::Number(2));
+    env.set("d".to_string(), AST::Number(6));
 
     let mut evaluator = Evaluator::new(&mut env);
 
@@ -113,5 +111,5 @@ fn test_variable_ast() {
                                        box AST::Variable("d".to_string())));
     let result = evaluator.evaluate(ast);
 
-    assert_eq!(result, Some(AST::Number("35".to_string())));
+    assert_eq!(result, Some(AST::Number(35)));
 }

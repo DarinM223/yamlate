@@ -62,19 +62,18 @@ fn test_bad_value_empty_stack() {
 #[test]
 fn test_bad_value_nonempty_stack() {
     let mut env = Environment::new();
-    env.set("hello".to_string(), AST::Number("2".to_string()));
+    env.set("hello".to_string(), AST::Number(2));
     env.push();
-    env.set("world".to_string(), AST::Number("3".to_string()));
+    env.set("world".to_string(), AST::Number(3));
     assert_eq!(env.get("blah".to_string()), None);
 }
 
 #[test]
 fn test_good_value_one_stack() {
     let mut env = Environment::new();
-    env.set("hello".to_string(), AST::Number("2".to_string()));
-    env.set("world".to_string(), AST::Number("3".to_string()));
-    assert_eq!(env.get("world".to_string()),
-               Some(&AST::Number("3".to_string())));
+    env.set("hello".to_string(), AST::Number(2));
+    env.set("world".to_string(), AST::Number(3));
+    assert_eq!(env.get("world".to_string()), Some(&AST::Number(3)));
 }
 
 #[test]
@@ -95,24 +94,21 @@ fn test_pop_removes_environment() {
 #[test]
 fn test_good_value_multiple_stacks() {
     let mut env = Environment::new();
-    env.set("hello".to_string(), AST::Number("2".to_string()));
+    env.set("hello".to_string(), AST::Number(2));
     env.push();
-    env.set("world".to_string(), AST::Number("3".to_string()));
-    assert_eq!(env.get("hello".to_string()),
-               Some(&AST::Number("2".to_string())));
+    env.set("world".to_string(), AST::Number(3));
+    assert_eq!(env.get("hello".to_string()), Some(&AST::Number(2)));
 }
 
 #[test]
 fn test_override_value() {
     let mut env = Environment::new();
-    env.set("hello".to_string(), AST::Number("2".to_string()));
+    env.set("hello".to_string(), AST::Number(2));
     env.push();
-    env.set("hello".to_string(), AST::Number("3".to_string()));
+    env.set("hello".to_string(), AST::Number(3));
 
-    assert_eq!(env.get("hello".to_string()),
-               Some(&AST::Number("3".to_string())));
+    assert_eq!(env.get("hello".to_string()), Some(&AST::Number(3)));
 
     env.pop();
-    assert_eq!(env.get("hello".to_string()),
-               Some(&AST::Number("2".to_string())));
+    assert_eq!(env.get("hello".to_string()), Some(&AST::Number(2)));
 }

@@ -118,9 +118,9 @@ fn test_collapse_stacks() {
 
     let mut parser = Parser::new();
 
-    parser.var_stack.push_front(AST::Number("1".to_string()));
-    parser.var_stack.push_front(AST::Number("2".to_string()));
-    parser.var_stack.push_front(AST::Number("3".to_string()));
+    parser.var_stack.push_front(AST::Number(1));
+    parser.var_stack.push_front(AST::Number(2));
+    parser.var_stack.push_front(AST::Number(3));
 
     parser.op_stack.push_front("*".to_string());
     parser.op_stack.push_front("(".to_string());
@@ -131,9 +131,8 @@ fn test_collapse_stacks() {
 
     assert_eq!(parser.var_stack.len(), 1);
 
-    let expected_val = Some(AST::Times(box AST::Number("1".to_string()),
-                                       box AST::Plus(box AST::Number("2".to_string()),
-                                                     box AST::Number("3".to_string()))));
+    let expected_val = Some(AST::Times(box AST::Number(1),
+                                       box AST::Plus(box AST::Number(2), box AST::Number(3))));
 
     assert_eq!(parser.var_stack.pop_front(), expected_val);
 }
@@ -157,11 +156,11 @@ fn test_parse_to_ast() {
     let mut variables = VecDeque::new();
     let mut operators = VecDeque::new();
 
-    variables.push_front(AST::Number("1".to_string()));
-    variables.push_front(AST::Number("5".to_string()));
-    variables.push_front(AST::Number("2".to_string()));
-    variables.push_front(AST::Number("6".to_string()));
-    variables.push_front(AST::Number("2".to_string()));
+    variables.push_front(AST::Number(1));
+    variables.push_front(AST::Number(5));
+    variables.push_front(AST::Number(2));
+    variables.push_front(AST::Number(6));
+    variables.push_front(AST::Number(2));
 
     operators.push_front("+".to_string());
     operators.push_front("!".to_string());
@@ -173,11 +172,12 @@ fn test_parse_to_ast() {
 
     let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-    let expected_val = Some(AST::Plus(box AST::Number("1".to_string()),
-                                      box AST::Times(box AST::Exponent(box AST::Not(box AST::Number("5".to_string())),
-                                                                       box AST::And(box AST::Number("2".to_string()),
-                                                                                    box AST::Number("6".to_string()))),
-                                                     box AST::Number("2".to_string()))));
+    let expected_val =
+        Some(AST::Plus(box AST::Number(1),
+                       box AST::Times(box AST::Exponent(box AST::Not(box AST::Number(5)),
+                                                        box AST::And(box AST::Number(2),
+                                                                     box AST::Number(6))),
+                                      box AST::Number(2))));
 
     assert_eq!(result, expected_val);
 }
