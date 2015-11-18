@@ -1,5 +1,5 @@
 #[derive(Debug)]
-#[derive(Eq, PartialEq)]
+#[derive(PartialEq)]
 #[derive(Clone)]
 pub enum AST {
     Assign(Box<AST>, Box<AST>),
@@ -15,6 +15,7 @@ pub enum AST {
 
     Variable(String),
     Number(i32),
+    Decimal(f64),
     String(String),
     None,
 }

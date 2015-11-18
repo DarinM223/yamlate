@@ -6,6 +6,7 @@ use std::collections::VecDeque;
 enum WordState {
     Variable,
     Number,
+    Decimal,
     String,
     Operator,
     None,
@@ -20,7 +21,8 @@ fn split_string_letter(ch: char,
     match curr_state {
         &WordState::Variable => Ok((curr_str + ch.to_string().as_str(), WordState::Variable)),
         &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
-        &WordState::Number => Err("Number cannot have a letter after it".to_string()),
+        &WordState::Number | &WordState::Decimal =>
+            Err("Number cannot have a letter after it".to_string()),
         &WordState::Operator => {
             operator_array.push_front(curr_str);
             Ok((ch.to_string(), WordState::Variable))
@@ -38,6 +40,7 @@ fn split_string_digit(ch: char,
     match curr_state {
         &WordState::Variable => Ok((curr_str + ch.to_string().as_str(), WordState::Variable)),
         &WordState::Number => Ok((curr_str + ch.to_string().as_str(), WordState::Number)),
+        &WordState::Decimal => Ok((curr_str + ch.to_string().as_str(), WordState::Decimal)),
         &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
         &WordState::Operator => {
             operator_array.push_front(curr_str);
@@ -60,6 +63,10 @@ fn split_string_operator(ch: char,
         }
         &WordState::Number => {
             variable_array.push_front(AST::Number(curr_str.as_str().parse().unwrap()));
+            Ok((ch.to_string(), WordState::Operator))
+        }
+        &WordState::Decimal => {
+            variable_array.push_front(AST::Decimal(curr_str.as_str().parse().unwrap()));
             Ok((ch.to_string(), WordState::Operator))
         }
         &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
@@ -89,13 +96,28 @@ fn split_string_quote(ch: char,
             variable_array.push_front(AST::String(curr_str));
             Ok((String::new(), WordState::None))
         }
-        &WordState::Number | &WordState::Variable =>
+        &WordState::Number | &WordState::Decimal | &WordState::Variable =>
             Err("Cannot create a string after invalid type".to_string()),
         &WordState::Operator => {
             operator_array.push_front(curr_str);
             Ok((String::new(), WordState::String))
         }
         &WordState::None => Ok((curr_str, WordState::String)),
+    }
+}
+
+fn split_string_dot(ch: char,
+                    variable_array: &mut VecDeque<AST>,
+                    operator_array: &mut VecDeque<String>,
+                    curr_state: &WordState,
+                    curr_str: String)
+                    -> Result<(String, WordState), String> {
+    match curr_state {
+        &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
+        &WordState::Number => Ok((curr_str + ch.to_string().as_str(), WordState::Decimal)),
+        &WordState::Operator | &WordState::Decimal | &WordState::Variable =>
+            Err("Cannot have a dot after".to_string()),
+        &WordState::None => Err("Cannot start with dot".to_string()),
     }
 }
 
@@ -128,6 +150,8 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), String
             }
         } else if ch == '\"' {
             split_fn = split_string_quote;
+        } else if ch == '.' {
+            split_fn = split_string_dot;
         } else {
             split_fn = split_string_operator;
         }
@@ -151,6 +175,8 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), String
             WordState::Variable => variable_array.push_front(AST::Variable(curr_str)),
             WordState::Number =>
                 variable_array.push_front(AST::Number(curr_str.as_str().parse().unwrap())),
+            WordState::Decimal =>
+                variable_array.push_front(AST::Decimal(curr_str.as_str().parse().unwrap())),
             WordState::String => variable_array.push_front(AST::String(curr_str)),
             WordState::Operator => operator_array.push_front(curr_str),
             WordState::None => {}
@@ -284,6 +310,23 @@ fn test_strings() {
                                                         .map(|s| s.to_string())
                                                         .collect();
             assert_eq!(operators, operator_result);
+        }
+        Err(e) => println!("{:?}", e),
+    }
+}
+
+#[test]
+fn test_float() {
+    let s = "1.23 - 3.14 + 123.45678";
+    match parse_string(s) {
+        Ok((variables, operators)) => {
+            let variable_result: VecDeque<AST> = vec![AST::Decimal(1.23),
+                                                      AST::Decimal(3.14),
+                                                      AST::Decimal(123.45678)]
+                                                     .into_iter()
+                                                     .rev()
+                                                     .collect();
+            assert_eq!(variables, variable_result);
         }
         Err(e) => println!("{:?}", e),
     }
