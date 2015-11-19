@@ -1,7 +1,10 @@
+extern crate num;
+
 use ast::AST;
 use environment::{IEnvironment, Environment};
 use std::collections::HashMap;
 use helpers::ast_to_operator;
+use self::num::traits::Num;
 
 pub struct Evaluator<'a> {
     env: &'a mut IEnvironment,
@@ -16,20 +19,35 @@ impl<'a> Evaluator<'a> {
         let result1 = self.evaluate(child1);
         let result2 = self.evaluate(child2);
 
-        let mut param1: i32 = 0;
-        let mut param2: i32 = 0;
-
         match result1 {
-            Some(AST::Number(val)) => param1 = val,
-            _ => return None,
-        }
+            Some(AST::Number(val)) => {
+                let mut param1: i32 = val;
 
-        match result2 {
-            Some(AST::Number(val)) => param2 = val,
-            _ => return None,
-        }
+                match result2 {
+                    Some(AST::Decimal(param2)) =>
+                        Some(AST::Decimal(apply_arithmetic_operator(operator,
+                                                                    param1 as f64,
+                                                                    param2))),
+                    Some(AST::Number(param2)) =>
+                        Some(AST::Number(apply_arithmetic_operator(operator, param1, param2))),
+                    _ => None,
+                }
+            }
+            Some(AST::Decimal(val)) => {
+                let mut param1: f64 = val;
 
-        Some(AST::Number(apply_arithmetic_operator(operator, param1, param2)))
+                match result2 {
+                    Some(AST::Number(param2)) =>
+                        Some(AST::Decimal(apply_arithmetic_operator(operator,
+                                                                    param1,
+                                                                    param2 as f64))),
+                    Some(AST::Decimal(param2)) =>
+                        Some(AST::Decimal(apply_arithmetic_operator(operator, param1, param2))),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
     }
 
     /// evaluate evaluates the given AST and returns an AST 
@@ -41,7 +59,7 @@ impl<'a> Evaluator<'a> {
                 Some(val) => Some(val.clone()),
                 None => None,
             },
-            ast @ AST::Number(_) | ast @ AST::String(_) => Some(ast),
+            ast @ AST::Number(_) | ast @ AST::String(_) | ast @ AST::Decimal(_) => Some(ast),
             AST::Plus(box child1, box child2) |
             AST::Minus(box child1, box child2) |
             AST::Times(box child1, box child2) |
@@ -53,14 +71,14 @@ impl<'a> Evaluator<'a> {
     }
 }
 
-fn apply_arithmetic_operator(operator: &str, a: i32, b: i32) -> i32 {
+fn apply_arithmetic_operator<T: Num>(operator: &str, a: T, b: T) -> T {
     match operator {
         "+" => a + b,
         "-" => a - b,
         "*" => a * b,
         "/" => a / b,
         "%" => a % b,
-        _ => -1, 
+        _ => a + b, 
     }
 }
 
@@ -99,6 +117,7 @@ fn test_variable_ast() {
     //    /   \
     //   b     c
     // is "35" when a is 5, b is 3, c is 2, and d is 6
+
     let mut env = Environment::new();
     env.set("a".to_string(), AST::Number(5));
     env.set("b".to_string(), AST::Number(3));
@@ -114,4 +133,32 @@ fn test_variable_ast() {
     let result = evaluator.evaluate(ast);
 
     assert_eq!(result, Some(AST::Number(35)));
+}
+
+#[test]
+fn test_float_ast() {
+    // Test that the result for ast:
+    //      *
+    //    /   \
+    //   a     +
+    //       /   \
+    //      -     c
+    //    /   \
+    //   1.5   b
+    // is "27.5" when a is 5, b is 2, and c is 6
+
+    let mut env = Environment::new();
+    env.set("a".to_string(), AST::Number(5));
+    env.set("b".to_string(), AST::Number(2));
+    env.set("c".to_string(), AST::Number(6));
+
+    let mut evaluator = Evaluator::new(&mut env);
+
+    let ast = AST::Times(box AST::Variable("a".to_string()),
+                         box AST::Plus(box AST::Minus(box AST::Decimal(1.5),
+                                                      box AST::Variable("b".to_string())),
+                                       box AST::Variable("c".to_string())));
+    let result = evaluator.evaluate(ast);
+
+    assert_eq!(result, Some(AST::Decimal(27.5)));
 }

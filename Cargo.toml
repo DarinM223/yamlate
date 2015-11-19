@@ -6,3 +6,4 @@ authors = ["Darin Minamoto <darinm223@gmail.com>"]
 [dependencies]
 yaml-rust = "*"
 lazy_static = "*"
+num = "*"
