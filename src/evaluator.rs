@@ -15,58 +15,60 @@ impl<'a> Evaluator<'a> {
         Evaluator { env: env }
     }
 
-    fn arithmetic_operation(&mut self, operator: &str, child1: AST, child2: AST) -> Option<AST> {
+    fn arithmetic_operation(&mut self,
+                            operator: &str,
+                            child1: AST,
+                            child2: AST)
+                            -> Result<AST, String> {
         let result1 = self.evaluate(child1);
         let result2 = self.evaluate(child2);
 
         match result1 {
-            Some(AST::Number(val)) => {
+            Ok(AST::Number(val)) => {
                 let mut param1: i32 = val;
 
                 match result2 {
-                    Some(AST::Decimal(param2)) =>
-                        Some(AST::Decimal(apply_arithmetic_operator(operator,
-                                                                    param1 as f64,
-                                                                    param2))),
-                    Some(AST::Number(param2)) =>
-                        Some(AST::Number(apply_arithmetic_operator(operator, param1, param2))),
-                    _ => None,
+                    Ok(AST::Decimal(param2)) =>
+                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1 as f64, param2))),
+                    Ok(AST::Number(param2)) =>
+                        Ok(AST::Number(apply_arithmetic_operator(operator, param1, param2))),
+                    _ => Err("Right hand result is not a numeric value".to_string()),
                 }
             }
-            Some(AST::Decimal(val)) => {
+            Ok(AST::Decimal(val)) => {
                 let mut param1: f64 = val;
 
                 match result2 {
-                    Some(AST::Number(param2)) =>
-                        Some(AST::Decimal(apply_arithmetic_operator(operator,
+                    Ok(AST::Number(param2)) =>
+                        Ok(AST::Decimal(apply_arithmetic_operator(operator,
                                                                     param1,
                                                                     param2 as f64))),
-                    Some(AST::Decimal(param2)) =>
-                        Some(AST::Decimal(apply_arithmetic_operator(operator, param1, param2))),
-                    _ => None,
+                    Ok(AST::Decimal(param2)) =>
+                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2))),
+                    _ => Err("Right hand result is not a numeric value".to_string()),
                 }
             }
-            _ => None,
+            _ => Err("Left hand result is not a numeric value".to_string()),
         }
     }
 
     /// evaluate evaluates the given AST and returns an AST 
     /// of the result 
-    pub fn evaluate(&mut self, ast: AST) -> Option<AST> {
+    pub fn evaluate(&mut self, ast: AST) -> Result<AST, String> {
         let op = ast_to_operator(&ast);
         match ast {
             AST::Variable(name) => match self.env.get(name) {
-                Some(val) => Some(val.clone()),
-                None => None,
+                Some(val) => Ok(val.clone()),
+                None => Err("Variable is not in environment".to_string()),
             },
-            ast @ AST::Number(_) | ast @ AST::String(_) | ast @ AST::Decimal(_) => Some(ast),
+            ast @ AST::Number(_) | ast @ AST::String(_) | ast @ AST::Decimal(_) => Ok(ast),
             AST::Plus(box child1, box child2) |
             AST::Minus(box child1, box child2) |
             AST::Times(box child1, box child2) |
             AST::Divide(box child1, box child2) |
             AST::Modulo(box child1, box child2) =>
                 self.arithmetic_operation(op.as_str(), child1, child2),
-            _ => Some(AST::None),
+            _ => Err("Operation is not implemented yet".to_string()),
         }
     }
 }
@@ -103,7 +105,7 @@ fn test_arith_ast() {
 
     let result = evaluator.evaluate(ast);
 
-    assert_eq!(result, Some(AST::Number(35)));
+    assert_eq!(result, Ok(AST::Number(35)));
 }
 
 #[test]
@@ -132,7 +134,7 @@ fn test_variable_ast() {
                                        box AST::Variable("d".to_string())));
     let result = evaluator.evaluate(ast);
 
-    assert_eq!(result, Some(AST::Number(35)));
+    assert_eq!(result, Ok(AST::Number(35)));
 }
 
 #[test]
@@ -160,5 +162,5 @@ fn test_float_ast() {
                                        box AST::Variable("c".to_string())));
     let result = evaluator.evaluate(ast);
 
-    assert_eq!(result, Some(AST::Decimal(27.5)));
+    assert_eq!(result, Ok(AST::Decimal(27.5)));
 }
