@@ -2,6 +2,7 @@
 #[derive(PartialEq)]
 #[derive(Clone)]
 pub enum AST {
+    Declare(Box<AST>, Box<AST>),
     Assign(Box<AST>, Box<AST>),
     Plus(Box<AST>, Box<AST>),
     Minus(Box<AST>, Box<AST>),

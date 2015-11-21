@@ -13,7 +13,7 @@ pub trait IEnvironment {
     /// the current scope whereas assign assigns to the most current scope
     /// of an existing variable (so it can assign to variables in previous scopes if there
     /// is no binding of a variable to the current scope)
-    fn assign(&mut self, var: String, value: AST); 
+    fn assign(&mut self, var: String, value: AST);
 
     /// set sets a binding from variable name to a value in the current scope 
     /// of an environment
@@ -151,6 +151,6 @@ fn test_assign_sets_value_in_other_stack() {
     env.push();
     env.assign("hello".to_string(), AST::Number(3));
     env.pop();
-    
+
     assert_eq!(env.get("hello".to_string()), Some(&AST::Number(3)));
 }

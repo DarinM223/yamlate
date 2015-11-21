@@ -43,6 +43,7 @@ impl Parser {
 
                     let ast_node = match operator.as_str() {
                         "=" => AST::Assign(Box::new(var2), Box::new(var1)),
+                        ":=" => AST::Declare(Box::new(var2), Box::new(var1)),
                         "+" => AST::Plus(Box::new(var2), Box::new(var1)),
                         "-" => AST::Minus(Box::new(var2), Box::new(var1)),
                         "*" => AST::Times(Box::new(var2), Box::new(var1)),

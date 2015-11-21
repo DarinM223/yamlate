@@ -26,6 +26,7 @@ lazy_static! {
         hash_map.insert("||".to_string(), 1);
 
         hash_map.insert("=".to_string(), 0);
+        hash_map.insert(":=".to_string(), 0);
 
         hash_map
     };
@@ -55,6 +56,7 @@ pub fn operator_precedence(string: &str) -> i32 {
 
 pub fn ast_to_operator(ast: &AST) -> String {
     match ast {
+        &AST::Declare(_, _) => ":=",
         &AST::Assign(_, _) => "=",
         &AST::Plus(_, _) => "+",
         &AST::Minus(_, _) => "-",
