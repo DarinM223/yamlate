@@ -7,3 +7,7 @@ authors = ["Darin Minamoto <darinm223@gmail.com>"]
 yaml-rust = "*"
 lazy_static = "*"
 num = "*"
+libc = "*"
+
+[lib]
+crate-type = ["dylib"]
