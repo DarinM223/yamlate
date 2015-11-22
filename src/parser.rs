@@ -42,16 +42,18 @@ impl Parser {
                     let var2 = self.var_stack.pop_front().unwrap();
 
                     let ast_node = match operator.as_str() {
-                        "=" => AST::Assign(Box::new(var2), Box::new(var1)),
-                        ":=" => AST::Declare(Box::new(var2), Box::new(var1)),
-                        "+" => AST::Plus(Box::new(var2), Box::new(var1)),
-                        "-" => AST::Minus(Box::new(var2), Box::new(var1)),
-                        "*" => AST::Times(Box::new(var2), Box::new(var1)),
-                        "/" => AST::Divide(Box::new(var2), Box::new(var1)),
-                        "%" => AST::Modulo(Box::new(var2), Box::new(var1)),
-                        "^" => AST::Exponent(Box::new(var2), Box::new(var1)),
-                        "&&" => AST::And(Box::new(var2), Box::new(var1)),
-                        "||" => AST::Or(Box::new(var2), Box::new(var1)),
+                        "=" => AST::Assign(box var2, box var1),
+                        ":=" => AST::Declare(box var2, box var1),
+                        "==" => AST::Equal(box var2, box var1),
+                        "!=" => AST::NotEqual(box var2, box var1),
+                        "+" => AST::Plus(box var2, box var1),
+                        "-" => AST::Minus(box var2, box var1),
+                        "*" => AST::Times(box var2, box var1),
+                        "/" => AST::Divide(box var2, box var1),
+                        "%" => AST::Modulo(box var2, box var1),
+                        "^" => AST::Exponent(box var2, box var1),
+                        "&&" => AST::And(box var2, box var1),
+                        "||" => AST::Or(box var2, box var1),
                         _ => AST::None,
                     };
 

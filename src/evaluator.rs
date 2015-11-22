@@ -50,20 +50,56 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    fn evaluate_declare(&mut self, child1: AST, child2: AST) -> Result<AST, String> {
+    fn evaluate_set_variable(&mut self,
+                             operator: &str,
+                             child1: AST,
+                             child2: AST)
+                             -> Result<AST, String> {
         let result = self.evaluate(child2);
 
         match child1 {
             AST::Variable(name) => {
                 match result {
                     Ok(value) => {
-                        self.env.set(name, value.clone());
+                        match operator {
+                            ":=" => self.env.set(name, value.clone()),
+                            "=" => self.env.assign(name, value.clone()),
+                            _ =>
+                                return Err("Variable setting operator not implemented".to_string()),
+                        }
                         Ok(value)
                     }
                     err @ Err(_) => err,
                 }
             }
             _ => Err("Left hand result must be a variable".to_string()),
+        }
+    }
+
+    fn evaluate_equality(&mut self,
+                         operator: &str,
+                         child1: AST,
+                         child2: AST)
+                         -> Result<AST, String> {
+        let result1 = self.evaluate(child1).unwrap_or(AST::None);
+        let result2 = self.evaluate(child2).unwrap_or(AST::None);
+
+        match operator {
+            "==" => {
+                if result1.eq(&result2) {
+                    Ok(AST::Number(1))
+                } else {
+                    Ok(AST::Number(0))
+                }
+            }
+            "!=" => {
+                if result1.eq(&result2) {
+                    Ok(AST::Number(1))
+                } else {
+                    Ok(AST::Number(0))
+                }
+            }
+            _ => Err("Equality operator not implemented".to_string()),
         }
     }
 
@@ -76,8 +112,17 @@ impl<'a> Evaluator<'a> {
                 Some(val) => Ok(val.clone()),
                 None => Err("Variable is not in environment".to_string()),
             },
-            AST::Declare(box child1, box child2) => self.evaluate_declare(child1, child2),
+
             ast @ AST::Number(_) | ast @ AST::String(_) | ast @ AST::Decimal(_) => Ok(ast),
+
+            AST::Assign(box child1, box child2) |
+            AST::Declare(box child1, box child2) =>
+                self.evaluate_set_variable(op.as_str(), child1, child2),
+
+            AST::Equal(box child1, box child2) |
+            AST::NotEqual(box child1, box child2) =>
+                self.evaluate_equality(op.as_str(), child1, child2),
+
             AST::Plus(box child1, box child2) |
             AST::Minus(box child1, box child2) |
             AST::Times(box child1, box child2) |
@@ -182,7 +227,7 @@ fn test_float_ast() {
 }
 
 #[test]
-fn test_declare() {
+fn test_declare_assign() {
     // Test that evaluating ast:
     //     :=
     //    /  \
@@ -192,17 +237,67 @@ fn test_declare() {
     //         / \
     //        2  3
     // results in x being bound to 50 in the current scope
+    // then after pushing a new scope and evaluating ast:
+    //    =
+    //   / \
+    //  x   +
+    //     / \
+    //    1   2
+    // results in x being set to 3 in the original scope
 
     let mut env = Environment::new();
-    {
-        let mut evaluator = Evaluator::new(&mut env);
-        let ast = AST::Declare(box AST::Variable("x".to_string()),
-                               box AST::Times(box AST::Number(10),
-                                              box AST::Plus(box AST::Number(2),
-                                                            box AST::Number(3))));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(50)));
-    }
+    let mut evaluator = Evaluator::new(&mut env);
+    let ast = AST::Declare(box AST::Variable("x".to_string()),
+                           box AST::Times(box AST::Number(10),
+                                          box AST::Plus(box AST::Number(2), box AST::Number(3))));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(50)));
+    assert_eq!(evaluator.env.get("x".to_string()), Some(&AST::Number(50)));
 
-    assert_eq!(env.get("x".to_string()), Some(&AST::Number(50)));
+    evaluator.env.push();
+
+    let ast = AST::Assign(box AST::Variable("x".to_string()),
+                          box AST::Plus(box AST::Number(1), box AST::Number(2)));
+
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(3)));
+
+    evaluator.env.pop();
+    assert_eq!(evaluator.env.get("x".to_string()), Some(&AST::Number(3)));
+}
+
+#[test]
+fn test_equality() {
+    let mut env = Environment::new();
+    let mut evaluator = Evaluator::new(&mut env);
+
+    // Test number equality
+
+    let ast = AST::Equal(box AST::Number(5), box AST::Number(5));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(1)));
+
+    let ast = AST::Equal(box AST::Number(5), box AST::Number(4));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(0)));
+
+    // Test decimal equality
+    
+    let ast = AST::Equal(box AST::Decimal(2.56), box AST::Decimal(2.56));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(1)));
+
+    let ast = AST::Equal(box AST::Decimal(2.56), box AST::Decimal(2.55));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(0)));
+
+    // Test string equality
+    
+    let ast = AST::Equal(box AST::String("Hello".to_string()), box AST::String("Hello".to_string()));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(1)));
+
+    let ast = AST::Equal(box AST::String("Hello".to_string()), box AST::String("hello".to_string()));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(0)));
 }

@@ -58,6 +58,8 @@ pub fn ast_to_operator(ast: &AST) -> String {
     match ast {
         &AST::Declare(_, _) => ":=",
         &AST::Assign(_, _) => "=",
+        &AST::Equal(_, _) => "==",
+        &AST::NotEqual(_, _) => "!=",
         &AST::Plus(_, _) => "+",
         &AST::Minus(_, _) => "-",
         &AST::Times(_, _) => "*",
