@@ -55,22 +55,23 @@ impl<'a> Evaluator<'a> {
                              child1: AST,
                              child2: AST)
                              -> Result<AST, String> {
-        let result = self.evaluate(child2);
+        let result = self.evaluate(child2).unwrap_or(AST::None);
 
         match child1 {
             AST::Variable(name) => {
-                match result {
-                    Ok(value) => {
-                        match operator {
-                            ":=" => self.env.set(name, value.clone()),
-                            "=" => self.env.assign(name, value.clone()),
-                            _ =>
-                                return Err("Variable setting operator not implemented".to_string()),
-                        }
-                        Ok(value)
-                    }
-                    err @ Err(_) => err,
+                if result == AST::None {
+                    return Ok(result);
                 }
+
+                if operator == ":=" {
+                    self.env.set(name, result.clone());
+                } else if operator == "=" {
+                    self.env.assign(name, result.clone());
+                } else {
+                    return Err("Variable setting operator not implemented".to_string());
+                }
+
+                Ok(result)
             }
             _ => Err("Left hand result must be a variable".to_string()),
         }
@@ -103,6 +104,29 @@ impl<'a> Evaluator<'a> {
         }
     }
 
+    fn evaluate_boolean(&mut self,
+                        operator: &str,
+                        child1: AST,
+                        child2: AST)
+                        -> Result<AST, String> {
+        let result1 = self.evaluate(child1).unwrap_or(AST::None);
+
+        match result1 {
+            AST::Number(val1) => {
+                if val1 == 0 && operator == "&&" || val1 > 0 && operator == "||" {
+                    return Ok(AST::Number(val1));
+                }
+                let result2 = self.evaluate(child2).unwrap_or(AST::None);
+
+                match result2 {
+                    AST::Number(val2) => Ok(AST::Number(val2)),
+                    _ => Err("Right hand result must be a number".to_string()),
+                }
+            }
+            _ => Err("Left hand result must be a number".to_string()),
+        }
+    }
+
     /// evaluate evaluates the given AST and returns an AST 
     /// of the result 
     pub fn evaluate(&mut self, ast: AST) -> Result<AST, String> {
@@ -123,12 +147,16 @@ impl<'a> Evaluator<'a> {
             AST::NotEqual(box child1, box child2) =>
                 self.evaluate_equality(op.as_str(), child1, child2),
 
+            AST::And(box child1, box child2) |
+            AST::Or(box child1, box child2) => self.evaluate_boolean(op.as_str(), child1, child2),
+
             AST::Plus(box child1, box child2) |
             AST::Minus(box child1, box child2) |
             AST::Times(box child1, box child2) |
             AST::Divide(box child1, box child2) |
             AST::Modulo(box child1, box child2) =>
                 self.evaluate_arithmetic(op.as_str(), child1, child2),
+
             _ => Err("Operation is not implemented yet".to_string()),
         }
     }
@@ -282,7 +310,7 @@ fn test_equality() {
     assert_eq!(result, Ok(AST::Number(0)));
 
     // Test decimal equality
-    
+
     let ast = AST::Equal(box AST::Decimal(2.56), box AST::Decimal(2.56));
     let result = evaluator.evaluate(ast);
     assert_eq!(result, Ok(AST::Number(1)));
@@ -292,12 +320,49 @@ fn test_equality() {
     assert_eq!(result, Ok(AST::Number(0)));
 
     // Test string equality
-    
-    let ast = AST::Equal(box AST::String("Hello".to_string()), box AST::String("Hello".to_string()));
+
+    let ast = AST::Equal(box AST::String("Hello".to_string()),
+                         box AST::String("Hello".to_string()));
     let result = evaluator.evaluate(ast);
     assert_eq!(result, Ok(AST::Number(1)));
 
-    let ast = AST::Equal(box AST::String("Hello".to_string()), box AST::String("hello".to_string()));
+    let ast = AST::Equal(box AST::String("Hello".to_string()),
+                         box AST::String("hello".to_string()));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(0)));
+}
+
+
+#[test]
+fn test_boolean_operators() {
+    let mut env = Environment::new();
+    let mut evaluator = Evaluator::new(&mut env);
+
+    // Test and operator
+
+    let ast = AST::And(box AST::Number(1), box AST::Number(0));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(0)));
+
+    let ast = AST::And(box AST::Number(0), box AST::Number(5));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(0)));
+
+    let ast = AST::And(box AST::Number(3), box AST::Number(5));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(5)));
+
+    // Test or operator
+
+    let ast = AST::Or(box AST::Number(5), box AST::Number(1));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(5)));
+
+    let ast = AST::Or(box AST::Number(0), box AST::Number(3));
+    let result = evaluator.evaluate(ast);
+    assert_eq!(result, Ok(AST::Number(3)));
+
+    let ast = AST::Or(box AST::Number(0), box AST::Number(0));
     let result = evaluator.evaluate(ast);
     assert_eq!(result, Ok(AST::Number(0)));
 }
