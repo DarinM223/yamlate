@@ -3,7 +3,7 @@ use helpers::is_operator;
 use std::str::FromStr;
 use std::collections::VecDeque;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 enum WordState {
     Variable,
     Number,
@@ -142,13 +142,10 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), String
             split_fn = split_string_digit;
         } else if ch == ' ' || ch == '\t' {
             // ignore spaces and tabs except for inside a string
-            match curr_state {
-                WordState::String => {
-                    curr_str = curr_str + ch.to_string().as_str();
-                    continue;
-                }
-                _ => continue,
+            if curr_state == WordState::String {
+                curr_str = curr_str + ch.to_string().as_str();
             }
+            continue;
         } else if ch == '\"' {
             split_fn = split_string_quote;
         } else if ch == '.' {

@@ -1,6 +1,4 @@
-#[derive(Debug)]
-#[derive(PartialEq)]
-#[derive(Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AST {
     Declare(Box<AST>, Box<AST>),
     Assign(Box<AST>, Box<AST>),

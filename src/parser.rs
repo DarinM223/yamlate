@@ -1,5 +1,5 @@
 use ast::AST;
-use helpers::operator_precedence;
+use helpers::{operator_precedence, operator_to_ast};
 use std::collections::VecDeque;
 
 /// Parses string into AST
@@ -41,21 +41,7 @@ impl Parser {
                     let var1 = self.var_stack.pop_front().unwrap();
                     let var2 = self.var_stack.pop_front().unwrap();
 
-                    let ast_node = match operator.as_str() {
-                        "=" => AST::Assign(box var2, box var1),
-                        ":=" => AST::Declare(box var2, box var1),
-                        "==" => AST::Equal(box var2, box var1),
-                        "!=" => AST::NotEqual(box var2, box var1),
-                        "+" => AST::Plus(box var2, box var1),
-                        "-" => AST::Minus(box var2, box var1),
-                        "*" => AST::Times(box var2, box var1),
-                        "/" => AST::Divide(box var2, box var1),
-                        "%" => AST::Modulo(box var2, box var1),
-                        "^" => AST::Exponent(box var2, box var1),
-                        "&&" => AST::And(box var2, box var1),
-                        "||" => AST::Or(box var2, box var1),
-                        _ => AST::None,
-                    };
+                    let ast_node = operator_to_ast(operator.as_str(), var2, var1);
 
                     self.var_stack.push_front(ast_node);
                 }

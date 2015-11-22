@@ -74,6 +74,24 @@ pub fn ast_to_operator(ast: &AST) -> String {
     .to_string()
 }
 
+pub fn operator_to_ast(operator: &str, ast1: AST, ast2: AST) -> AST {
+    match operator {
+        "=" => AST::Assign(box ast1, box ast2),
+        ":=" => AST::Declare(box ast1, box ast2),
+        "==" => AST::Equal(box ast1, box ast2),
+        "!=" => AST::NotEqual(box ast1, box ast2),
+        "+" => AST::Plus(box ast1, box ast2),
+        "-" => AST::Minus(box ast1, box ast2),
+        "*" => AST::Times(box ast1, box ast2),
+        "/" => AST::Divide(box ast1, box ast2),
+        "%" => AST::Modulo(box ast1, box ast2),
+        "^" => AST::Exponent(box ast1, box ast2),
+        "&&" => AST::And(box ast1, box ast2),
+        "||" => AST::Or(box ast1, box ast2),
+        _ => AST::None,
+    }
+}
+
 pub fn is_split_character(ch: char) -> bool {
     match ch {
         ' ' => true,

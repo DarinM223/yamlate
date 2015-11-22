@@ -63,11 +63,9 @@ impl IEnvironment for Environment {
     }
 
     fn set(&mut self, var: String, value: AST) {
-        match self.stack.len() {
-            0 => {}
-            n => {
-                self.stack[n - 1].insert(var, value);
-            }
+        let n = self.stack.len();
+        if n > 0 {
+            self.stack[n - 1].insert(var, value);
         }
     }
 
