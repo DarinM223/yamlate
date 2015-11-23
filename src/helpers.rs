@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::{Once, ONCE_INIT};
 use ast::AST;
 
 lazy_static! {

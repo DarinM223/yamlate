@@ -31,28 +31,33 @@ class StringReturnType(ctypes.Structure):
     _fields_ = [("value", ctypes.c_char_p),
                 ("error", ctypes.c_int)]
 
-class DecimalReturnTypes(ctypes.Structure):
+class DecimalReturnType(ctypes.Structure):
     _fields_ = [("value", ctypes.c_double),
                 ("error", ctypes.c_int)]
 
 env_p = ctypes.POINTER(Environment)
 
 lib.environment_create.restype = env_p
-lib.environment_set_integer.argtypes = [env_p, ctypes.c_char_p, ctypes.c_int]
 
+lib.environment_set_integer.argtypes = [env_p, ctypes.c_char_p, ctypes.c_int]
 lib.environment_get_integer.argtypes = [env_p, ctypes.c_char_p]
 lib.environment_get_integer.restype = IntReturnType
 
-lib.environment_set_string.argtypes = [env_p, ctypes.c_char_p]
+lib.environment_set_string.argtypes = [env_p, ctypes.c_char_p, ctypes.c_char_p]
+lib.environment_get_string.argtypes = [env_p, ctypes.c_char_p]
 lib.environment_get_string.restype = StringReturnType
+
+lib.environment_set_decimal.argtypes = [env_p, ctypes.c_char_p, ctypes.c_double]
+lib.environment_get_decimal.argtypes = [env_p, ctypes.c_char_p]
+lib.environment_get_decimal.restype = DecimalReturnType
 
 # create an environment
 environment = lib.environment_create()
 
 # set some values in the environment
 lib.environment_set_integer(environment, 'hello', 2)
-#lib.environment_push()
 lib.environment_set_string(environment, 'world', 'blah')
+lib.environment_set_decimal(environment, 'blah', 3.14)
 
 result = lib.environment_get_string(environment, 'world')
 # should print out 'blah'
@@ -60,14 +65,17 @@ print result.value
 # should print out '0'
 print result.error
 
-#lib.environment_pop()
 result = lib.environment_get_integer(environment, 'hello')
-
 # should print out '2'
 print result.value
 # should print out '0'
 print result.error
 
+result = lib.environment_get_decimal(environment, 'blah')
+# should print out '3.14'
+print result.value
+# should print out '0'
+print result.error
 
 # cleanup environment after
 lib.environment_destroy(environment)

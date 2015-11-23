@@ -14,6 +14,7 @@ mod parser;
 mod lexer;
 mod environment;
 mod evaluator;
+mod ffi_types;
 
 pub mod environment_ffi;
 

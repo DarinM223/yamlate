@@ -84,7 +84,7 @@ impl IEnvironment for Environment {
 
 #[test]
 fn test_bad_value_empty_stack() {
-    let mut env = Environment::new();
+    let env = Environment::new();
     assert_eq!(env.get("Hello".to_string()), None);
 }
 

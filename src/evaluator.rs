@@ -2,7 +2,6 @@ extern crate num;
 
 use ast::AST;
 use environment::{IEnvironment, Environment};
-use std::collections::HashMap;
 use helpers::ast_to_operator;
 use self::num::traits::Num;
 
@@ -25,7 +24,7 @@ impl<'a> Evaluator<'a> {
 
         match result1 {
             Ok(AST::Number(val)) => {
-                let mut param1: i32 = val;
+                let param1: i32 = val;
 
                 match result2 {
                     Ok(AST::Decimal(param2)) =>
@@ -36,7 +35,7 @@ impl<'a> Evaluator<'a> {
                 }
             }
             Ok(AST::Decimal(val)) => {
-                let mut param1: f64 = val;
+                let param1: f64 = val;
 
                 match result2 {
                     Ok(AST::Number(param2)) =>

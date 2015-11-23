@@ -1,6 +1,5 @@
 use ast::AST;
 use helpers::is_operator;
-use std::str::FromStr;
 use std::collections::VecDeque;
 
 #[derive(Clone, PartialEq)]
@@ -14,7 +13,7 @@ enum WordState {
 }
 
 fn split_string_letter(ch: char,
-                       variable_array: &mut VecDeque<AST>,
+                       _variable_array: &mut VecDeque<AST>,
                        operator_array: &mut VecDeque<String>,
                        curr_state: &WordState,
                        curr_str: String)
@@ -33,7 +32,7 @@ fn split_string_letter(ch: char,
 }
 
 fn split_string_digit(ch: char,
-                      variable_array: &mut VecDeque<AST>,
+                      _variable_array: &mut VecDeque<AST>,
                       operator_array: &mut VecDeque<String>,
                       curr_state: &WordState,
                       curr_str: String)
@@ -86,7 +85,7 @@ fn split_string_operator(ch: char,
     }
 }
 
-fn split_string_quote(ch: char,
+fn split_string_quote(_ch: char,
                       variable_array: &mut VecDeque<AST>,
                       operator_array: &mut VecDeque<String>,
                       curr_state: &WordState,
@@ -108,8 +107,8 @@ fn split_string_quote(ch: char,
 }
 
 fn split_string_dot(ch: char,
-                    variable_array: &mut VecDeque<AST>,
-                    operator_array: &mut VecDeque<String>,
+                    _variable_array: &mut VecDeque<AST>,
+                    _operator_array: &mut VecDeque<String>,
                     curr_state: &WordState,
                     curr_str: String)
                     -> Result<(String, WordState), String> {
@@ -317,7 +316,7 @@ fn test_strings() {
 fn test_float() {
     let s = "1.23 - 3.14 + 123.45678";
     match parse_string(s) {
-        Ok((variables, operators)) => {
+        Ok((variables, _)) => {
             let variable_result: VecDeque<AST> = vec![AST::Decimal(1.23),
                                                       AST::Decimal(3.14),
                                                       AST::Decimal(123.45678)]
