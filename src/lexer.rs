@@ -171,9 +171,9 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), String
         match curr_state {
             WordState::Variable => variable_array.push_front(AST::Variable(curr_str)),
             WordState::Number =>
-                variable_array.push_front(AST::Number(curr_str.as_str().parse().unwrap())),
+                variable_array.push_front(AST::Number(curr_str.as_str().parse::<i32>().unwrap())),
             WordState::Decimal =>
-                variable_array.push_front(AST::Decimal(curr_str.as_str().parse().unwrap())),
+                variable_array.push_front(AST::Decimal(curr_str.as_str().parse::<f64>().unwrap())),
             WordState::String => variable_array.push_front(AST::String(curr_str)),
             WordState::Operator => operator_array.push_front(curr_str),
             WordState::None => {}
