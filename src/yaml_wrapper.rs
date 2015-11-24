@@ -15,7 +15,6 @@ pub fn evaluate(yaml: &Yaml, env: &mut IEnvironment) -> Yaml {
                 let mut parser = Parser::new();
 
                 let (mut var_deque, mut op_deque) = lexer::parse_string(split_vec[1]).unwrap();
-                println!("{:?}", op_deque);
                 let ast = parser.parse_to_ast(&mut var_deque, &mut op_deque).unwrap_or(AST::None);
                 let result = evaluator.evaluate(ast).unwrap_or(AST::None);
 
@@ -34,20 +33,20 @@ pub fn evaluate(yaml: &Yaml, env: &mut IEnvironment) -> Yaml {
     }
 }
 
-//#[test]
-//fn test_wrapper() {
-//    let s = "
-//    foo: 
-//      bar:
-//        return: '~> 1 * (2 + 3)'
-//    ";
-//    let mut env = Environment::new();
-//    env.set("a".to_string(), AST::Number(1));
-//    env.set("b".to_string(), AST::Number(2));
+#[test]
+fn test_wrapper() {
+    let s = "
+    foo: 
+      bar:
+        return: '~> 2 * (2 + 3)'
+    ";
+    let mut env = Environment::new();
+    env.set("a".to_string(), AST::Number(1));
+    env.set("b".to_string(), AST::Number(2));
 
-//    let docs = YamlLoader::load_from_str(s).unwrap();
+    let docs = YamlLoader::load_from_str(s).unwrap();
 
-//    for doc in &docs {
-//        println!("{:?}", evaluate(&doc["foo"]["bar"]["return"], &mut env));
-//    }
-//}
+    for doc in &docs {
+        assert_eq!(evaluate(&doc["foo"]["bar"]["return"], &mut env), Yaml::Integer(10));
+    }
+}

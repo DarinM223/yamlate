@@ -25,21 +25,21 @@ impl Parser {
         while !self.op_stack.is_empty() &&
               (add_op_precedence < operator_precedence(self.op_stack.front().unwrap()) ||
                paren_count > 0) {
-            let operator = self.op_stack.pop_front().unwrap();
+            let operator = self.op_stack.pop_front().unwrap_or(String::new());
 
             match operator.as_str() {
                 ")" => paren_count += 1,
                 "(" => paren_count -= 1, 
 
                 "!" => {
-                    let var = self.var_stack.pop_front().unwrap();
+                    let var = self.var_stack.pop_front().unwrap_or(AST::None);
                     self.var_stack.push_front(AST::Not(Box::new(var)));
                 }
 
                 // Double parameter operators
                 _ => {
-                    let var1 = self.var_stack.pop_front().unwrap();
-                    let var2 = self.var_stack.pop_front().unwrap();
+                    let var1 = self.var_stack.pop_front().unwrap_or(AST::None);
+                    let var2 = self.var_stack.pop_front().unwrap_or(AST::None);
 
                     let ast_node = operator_to_ast(operator.as_str(), var2, var1);
 
@@ -69,12 +69,13 @@ impl Parser {
             let operator = operators.pop_back().unwrap();
 
             if self.op_stack.len() > 0 {
-                let front_operator = self.op_stack.front().unwrap();
-                if operator_precedence(operator.as_str()) <
-                   operator_precedence(front_operator.as_str()) &&
-                   operator_precedence(operator.as_str()) != -1 {
-                    lower_precedence = true;
-                    op_precedence = operator_precedence(operator.as_str());
+                if let Some(front_operator) = self.op_stack.front() {
+                    if operator_precedence(operator.as_str()) <
+                       operator_precedence(front_operator.as_str()) &&
+                       operator_precedence(operator.as_str()) != -1 {
+                        lower_precedence = true;
+                        op_precedence = operator_precedence(operator.as_str());
+                    }
                 }
             }
 
@@ -89,7 +90,14 @@ impl Parser {
             self.op_stack.push_front(operator);
         }
 
-        self.collapse_stacks(-2);
+        // Push the remaining variables at the end
+        while !variables.is_empty() {
+            self.var_stack.push_front(variables.pop_back().unwrap());
+        }
+
+        if !self.op_stack.is_empty() {
+            self.collapse_stacks(-2);
+        }
 
         self.var_stack.pop_front()
     }
@@ -167,6 +175,31 @@ fn test_parse_to_ast() {
                                                         box AST::And(box AST::Number(2),
                                                                      box AST::Number(6))),
                                       box AST::Number(2))));
+
+    assert_eq!(result, expected_val);
+}
+
+#[test]
+fn test_parse_to_ast_simple() {
+    // test ast generation for `1 + 2`
+    // expected result:
+    //    +
+    //   / \
+    //  1   2
+
+    let mut parser = Parser::new();
+
+    let mut variables = VecDeque::new();
+    let mut operators = VecDeque::new();
+
+    variables.push_front(AST::Number(1));
+    variables.push_front(AST::Number(2));
+
+    operators.push_front("+".to_string());
+
+    let result = parser.parse_to_ast(&mut variables, &mut operators);
+
+    let expected_val = Some(AST::Plus(box AST::Number(1), box AST::Number(2)));
 
     assert_eq!(result, expected_val);
 }
