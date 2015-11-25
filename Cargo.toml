@@ -1,5 +1,5 @@
 [package]
-name = "yaml-embed"
+name = "yamlate"
 version = "0.1.0"
 authors = ["Darin Minamoto <darinm223@gmail.com>"]
 
