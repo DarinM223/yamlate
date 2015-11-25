@@ -13,6 +13,62 @@ pub enum YamlType {
     Return(Yaml),
 }
 
+// TODO: clean up super ugly code
+fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlType {
+    match s {
+         "if" => {
+            if let &Yaml::Array(ref arr) = v {
+                let mut prop_str = String::new();
+                for val in arr {
+                    if let &Yaml::String(ref prop) = val {
+                        let str_len = prop_str.len();
+                        if str_len == 0 {
+                            prop_str = format!("({})", prop.clone());
+                        } else {
+                            prop_str = format!("{} && ({})", prop_str, prop.clone());
+                        }
+                    } else if let &Yaml::Hash(ref h) = val {
+                        for (key, val) in h {
+                            if let &Yaml::String(ref keyword) = key {
+                                let result = evaluate(&Yaml::String(prop_str.clone()), env);
+
+                                match keyword.as_str() {
+                                    "do" => {
+                                        if let YamlType::Value(Yaml::Integer(i)) = result {
+                                            if i > 0 {
+                                                return evaluate(val, env);
+                                            }
+                                        }
+                                    }
+                                    "else" => {
+                                        let result = evaluate(&Yaml::String(prop_str.clone()), env);
+                                        if let YamlType::Value(Yaml::Integer(i)) = result {
+                                            if i == 0 {
+                                                return evaluate(val, env);
+                                            }
+                                        }
+                                    }
+                                    _ => {},
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+         }
+        "return" => {
+            let result = evaluate(&v, env);
+            if let YamlType::Value(val) = result {
+                return YamlType::Return(val);
+            }
+            return result;
+        }
+        _ => {}
+    }
+
+    YamlType::Value(v.clone())
+}
+
 pub fn evaluate(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
     match yaml {
         &Yaml::String(ref s) => {
@@ -47,7 +103,7 @@ pub fn evaluate(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
             }
 
             if let Some(val) = last_value {
-                YamlType::Return(val)
+                YamlType::Value(val)
             } else {
                 YamlType::Value(Yaml::Array(arr.clone()))
             }
@@ -55,16 +111,7 @@ pub fn evaluate(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
         &Yaml::Hash(ref h) => {
             for (k, v) in h {
                 if let &Yaml::String(ref s) = k {
-                    match s.as_str() {
-                        "return" => {
-                            let result = evaluate(&v, env);
-                            if let YamlType::Value(val) = result {
-                                return YamlType::Return(val);
-                            }
-                            return result;
-                        }
-                        _ => {}
-                    }
+                    return apply_keyword(s.as_str(), k, v, env);
                 }
             }
             YamlType::Value(Yaml::Hash(h.clone()))
@@ -75,7 +122,7 @@ pub fn evaluate(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
 
 #[test]
 fn test_yaml_eval() {
-    // Test if evaluating "foo" returns 10
+    // Test if evaluating "foo" returns 15
 
     let s = "
     foo: 
@@ -83,7 +130,8 @@ fn test_yaml_eval() {
       - if: 
         - '~> a == 2'
         - do:
-          - '~> a = 3'
+          \
+             - '~> a = 3'
       - return: '~> a * (2 + 3)'
     ";
     let mut env = Environment::new();
@@ -92,8 +140,83 @@ fn test_yaml_eval() {
 
     let docs = YamlLoader::load_from_str(s).unwrap();
 
-    for doc in &docs {
-        assert_eq!(evaluate(&doc["foo"], &mut env),
-                   YamlType::Return(Yaml::Integer(10)));
-    }
+    assert_eq!(evaluate(&docs[0]["foo"], &mut env),
+               YamlType::Return(Yaml::Integer(15)));
+}
+
+#[test]
+fn test_yaml_else() {
+    // Test if evaluating "foo" returns 20
+
+    let s = "
+    foo: 
+      - '~> a := 2'
+      - if: 
+        - '~> a == 3'
+        - do:
+          \
+             - '~> a = 3'
+          else:
+          \
+             - '~> a = 4'
+      - return: '~> a * (2 + 3)'
+    ";
+    let mut env = Environment::new();
+    env.set("a".to_string(), AST::Number(1));
+    env.set("b".to_string(), AST::Number(2));
+
+    let docs = YamlLoader::load_from_str(s).unwrap();
+
+    assert_eq!(evaluate(&docs[0]["foo"], &mut env),
+               YamlType::Return(Yaml::Integer(20)));
+}
+
+#[test]
+fn test_return() {
+    // Test that return doesn't execute statements after it
+
+    let s = "
+    foo: 
+      - return: '~> 2 * (2 + 3)'
+      - '~> a := 2'
+      - if: 
+        \
+             - '~> a == 2'
+        - do:
+          - '~> a = 3'
+    ";
+    let mut env = Environment::new();
+    env.set("a".to_string(), AST::Number(1));
+    env.set("b".to_string(), AST::Number(2));
+
+    let docs = YamlLoader::load_from_str(s).unwrap();
+
+    assert_eq!(evaluate(&docs[0]["foo"], &mut env),
+               YamlType::Return(Yaml::Integer(10)));
+
+    assert_eq!(env.get("a".to_string()), Some(&AST::Number(1)));
+}
+
+#[test]
+fn test_return_last_val() {
+    // Test that the last value is returned as value instead of return
+
+    let s = "
+    foo: 
+      - '~> a := 2'
+      - if: 
+        \
+             - '~> a == 2'
+        - do:
+          - '~> a = 3'
+      - '~> 2 * (2 + 3)'
+    ";
+    let mut env = Environment::new();
+    env.set("a".to_string(), AST::Number(1));
+    env.set("b".to_string(), AST::Number(2));
+
+    let docs = YamlLoader::load_from_str(s).unwrap();
+
+    assert_eq!(evaluate(&docs[0]["foo"], &mut env),
+               YamlType::Value(Yaml::Integer(10)));
 }
