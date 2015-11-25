@@ -12,10 +12,10 @@ mod helpers;
 mod ast;
 mod parser;
 mod lexer;
-mod environment;
+pub mod environment;
 mod evaluator;
-mod yaml;
+pub mod yaml;
 mod ffi_types;
 
 pub mod environment_ffi;
-
+pub mod yaml_ffi;
