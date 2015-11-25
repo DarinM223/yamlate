@@ -1,4 +1,5 @@
 use yaml_rust::yaml::Yaml;
+use std::collections::BTreeMap;
 use yaml_rust::{YamlLoader, YamlEmitter};
 use environment::{IEnvironment, Environment};
 use ast::AST;
@@ -13,10 +14,39 @@ pub enum YamlType {
     Return(Yaml),
 }
 
-// TODO: clean up super ugly code
+// same as apply_keywords but only works on nested keywords in if statements
+// like do or else
+fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &mut IEnvironment) -> YamlType {
+    for (key, val) in h {
+        if let &Yaml::String(ref keyword) = key {
+            let result = evaluate(&Yaml::String(prop_str.to_string()), env);
+
+            match keyword.as_str() {
+                "do" => {
+                    if let YamlType::Value(Yaml::Integer(i)) = result {
+                        if i > 0 {
+                            return evaluate(val, env);
+                        }
+                    }
+                }
+                "else" => {
+                    if let YamlType::Value(Yaml::Integer(i)) = result {
+                        if i == 0 {
+                            return evaluate(val, env);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    YamlType::Value(Yaml::Hash(h.clone()))
+}
+
+// applies the effects of keywords in a YAML hash
 fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlType {
     match s {
-         "if" => {
+        "if" => {
             if let &Yaml::Array(ref arr) = v {
                 let mut prop_str = String::new();
                 for val in arr {
@@ -28,34 +58,11 @@ fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlTyp
                             prop_str = format!("{} && ({})", prop_str, prop.clone());
                         }
                     } else if let &Yaml::Hash(ref h) = val {
-                        for (key, val) in h {
-                            if let &Yaml::String(ref keyword) = key {
-                                let result = evaluate(&Yaml::String(prop_str.clone()), env);
-
-                                match keyword.as_str() {
-                                    "do" => {
-                                        if let YamlType::Value(Yaml::Integer(i)) = result {
-                                            if i > 0 {
-                                                return evaluate(val, env);
-                                            }
-                                        }
-                                    }
-                                    "else" => {
-                                        let result = evaluate(&Yaml::String(prop_str.clone()), env);
-                                        if let YamlType::Value(Yaml::Integer(i)) = result {
-                                            if i == 0 {
-                                                return evaluate(val, env);
-                                            }
-                                        }
-                                    }
-                                    _ => {},
-                                }
-                            }
-                        }
+                        return apply_nested_if_keywords(h, prop_str.clone().as_str(), env);
                     }
                 }
             }
-         }
+        }
         "return" => {
             let result = evaluate(&v, env);
             if let YamlType::Value(val) = result {
@@ -69,6 +76,7 @@ fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlTyp
     YamlType::Value(v.clone())
 }
 
+// evaluates the result of a fragment of YAML
 pub fn evaluate(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
     match yaml {
         &Yaml::String(ref s) => {
@@ -134,6 +142,7 @@ fn test_yaml_eval() {
              - '~> a = 3'
       - return: '~> a * (2 + 3)'
     ";
+
     let mut env = Environment::new();
     env.set("a".to_string(), AST::Number(1));
     env.set("b".to_string(), AST::Number(2));
@@ -154,13 +163,12 @@ fn test_yaml_else() {
       - if: 
         - '~> a == 3'
         - do:
-          \
-             - '~> a = 3'
+            - '~> a = 3'
           else:
-          \
-             - '~> a = 4'
-      - return: '~> a * (2 + 3)'
+            - '~> a = 4'
+      - return: '~> a * (2 + 3)' 
     ";
+
     let mut env = Environment::new();
     env.set("a".to_string(), AST::Number(1));
     env.set("b".to_string(), AST::Number(2));
@@ -180,11 +188,11 @@ fn test_return() {
       - return: '~> 2 * (2 + 3)'
       - '~> a := 2'
       - if: 
-        \
-             - '~> a == 2'
+        - '~> a == 2'
         - do:
           - '~> a = 3'
     ";
+
     let mut env = Environment::new();
     env.set("a".to_string(), AST::Number(1));
     env.set("b".to_string(), AST::Number(2));
@@ -205,12 +213,12 @@ fn test_return_last_val() {
     foo: 
       - '~> a := 2'
       - if: 
-        \
-             - '~> a == 2'
+        - '~> a == 2'
         - do:
           - '~> a = 3'
       - '~> 2 * (2 + 3)'
     ";
+
     let mut env = Environment::new();
     env.set("a".to_string(), AST::Number(1));
     env.set("b".to_string(), AST::Number(2));
