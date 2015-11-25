@@ -14,7 +14,7 @@ mod parser;
 mod lexer;
 mod environment;
 mod evaluator;
-mod yaml_wrapper;
+mod yaml;
 mod ffi_types;
 
 pub mod environment_ffi;
