@@ -13,3 +13,14 @@ pub struct FFIReturnValue<T> {
     pub value: T,
     pub error: i32,
 }
+
+/// Represents a YAML type for FFI
+pub enum YamlType {
+    Integer,
+    Real,
+    String,
+    Boolean,
+    Array,
+    Hash,
+    Null,
+}
