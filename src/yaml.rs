@@ -56,12 +56,17 @@ fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlTyp
             if let &Yaml::Array(ref arr) = v {
                 let mut prop_str = String::new();
                 for val in arr {
-                    if let &Yaml::String(ref prop) = val {
-                        let str_len = prop_str.len();
-                        if str_len == 0 {
-                            prop_str = format!("({})", prop.clone());
-                        } else {
-                            prop_str = format!("{} && ({})", prop_str, prop.clone());
+                    if let &Yaml::String(ref s) = val {
+                        if s.as_str().contains("~>") {
+                            let split_vec = s.as_str().split("~>").collect::<Vec<_>>();
+                            let prop = split_vec[1];
+
+                            let str_len = prop_str.len();
+                            if str_len == 0 {
+                                prop_str = format!("~> ({})", prop.clone());
+                            } else {
+                                prop_str = format!("{} && ({})", prop_str, prop.clone());
+                            }
                         }
                     } else if let &Yaml::Hash(ref h) = val {
                         return apply_nested_if_keywords(h, prop_str.clone().as_str(), env);

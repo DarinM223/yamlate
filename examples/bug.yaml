@@ -1,0 +1,20 @@
+cricket:
+  wing_span: 3.5
+  wing_color:
+    - if:
+      - '~> current_season == "spring"'
+      - do:
+        - 'red'
+        else:
+        - 'blue'
+        
+beetle:
+  wing_span: 2.9
+  wing_color:
+    - if:
+      - '~> another_beetle_nearby == 1'
+      - do:
+        - '~> another_beetle_nearby = 0'
+        - 'blue'
+        else:
+        - 'red'

@@ -135,7 +135,7 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), String
         let split_fn: fn(char, &mut VecDeque<AST>, &mut VecDeque<String>, &WordState, String)
     -> Result<(String, WordState), String>;
 
-        if ch.is_alphabetic() {
+        if ch.is_alphabetic() || ch == '_' {
             split_fn = split_string_letter;
         } else if ch.is_digit(10) {
             split_fn = split_string_digit;
