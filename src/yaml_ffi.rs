@@ -40,7 +40,7 @@ pub extern "C" fn yaml_evaluate(yaml: *const Yaml, env: *mut Environment) -> *co
     let yaml = unsafe { &*yaml };
     let environment = unsafe { &mut *env };
 
-    let result = evaluate(yaml, environment);
+    let result: Yaml = evaluate(yaml, environment);
 
     let yaml_ptr = unsafe { transmute(box result) };
 
@@ -151,9 +151,33 @@ pub extern "C" fn yaml_hash_keys(yaml: *const Yaml) -> FFIArrayReturnValue<*cons
     }
 }
 
-//#[no_mangle]
-//pub extern "C" fn yaml_hash_get(yaml: *const Yaml, key: *const c_char) -> FFIReturnValue<*const Yaml> {
-//}
+#[no_mangle]
+pub extern "C" fn yaml_hash_get(yaml: *const Yaml, key: *const c_char) -> FFIReturnValue<*const Yaml> {
+    let yaml = unsafe { &*yaml };
+    let hash_key: String = unsafe { CStr::from_ptr(key).to_string_lossy().into_owned() };
+
+    match yaml {
+        &Yaml::Hash(ref h) => {
+            if let Some(result) = h.get(&Yaml::String(hash_key)).clone() {
+                let yaml_ptr = unsafe { transmute(box result.clone()) };
+
+                FFIReturnValue {
+                    value: yaml_ptr,
+                    error: Error::None as i32,
+                }
+            } else {
+                FFIReturnValue {
+                    value: ptr::null(),
+                    error: Error::NotDefined as i32,
+                }
+            }
+        }
+        _ => FFIReturnValue {
+            value: ptr::null(),
+            error: Error::WrongType as i32,
+        },
+    }
+}
 
 //#[no_mangle]
 //pub extern "C" fn yaml_array_len(yaml: *const Yaml) -> FFIReturnValue<i32> {

@@ -89,6 +89,9 @@ lib.yaml_string_get.restype = StringReturnType
 lib.yaml_hash_keys.argtypes = [yaml_p]
 lib.yaml_hash_keys.restype = ArrayStringReturnType
 
+lib.yaml_hash_get.argtypes = [yaml_p, ctypes.c_char_p]
+lib.yaml_hash_get.restype = YamlReturnType
+
 # create an environment
 environment = lib.environment_create()
 
@@ -120,17 +123,46 @@ with open("./examples/example.yaml", "r") as yaml_file:
     data = yaml_file.read()
 
     # load with yaml string
-    yaml_ret = lib.yaml_create_from_string(data)
+    yaml_res = lib.yaml_create_from_string(data)
 
-    if yaml_ret.error == ErrorCode.ERROR_NONE:
-        yaml = yaml_ret.value
-        keys = lib.yaml_hash_keys(yaml)
+    if yaml_res.error == ErrorCode.ERROR_NONE:
+        root_yaml = yaml_res.value
+
+        blah_key_yaml_res = lib.yaml_hash_get(root_yaml, "blah")
+        if blah_key_yaml_res.error == ErrorCode.ERROR_NONE:
+            blah_key_yaml = blah_key_yaml_res.value
+
+            int_res = lib.yaml_integer_get(blah_key_yaml)
+            if int_res.error == ErrorCode.ERROR_NONE:
+                i = int_res.value
+                # should print 2
+                print i
+
+            lib.yaml_destroy(blah_key_yaml)
+
+        foo_key_yaml_res = lib.yaml_hash_get(root_yaml, "foo")
+
+        if foo_key_yaml_res.error == ErrorCode.ERROR_NONE:
+            foo_key_yaml = foo_key_yaml_res.value
+
+            result = lib.yaml_evaluate(foo_key_yaml, environment)
+
+            int_res = lib.yaml_integer_get(result)
+
+            if int_res.error == ErrorCode.ERROR_NONE:
+                i = int_res.value
+                # should print 10
+                print i
+
+            lib.yaml_destroy(foo_key_yaml)
+
+        keys = lib.yaml_hash_keys(root_yaml)
 
         if keys.error == ErrorCode.ERROR_NONE:
             for i in range(0, keys.length):
                 print keys.value[i]
 
-        lib.yaml_destroy(yaml)
+        lib.yaml_destroy(root_yaml)
 
 # cleanup environment after
 lib.environment_destroy(environment)
