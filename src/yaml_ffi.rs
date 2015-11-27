@@ -1,22 +1,33 @@
 use libc::c_char;
 use yaml_rust::yaml::Yaml;
 use yaml_rust::YamlLoader;
-use std::mem::transmute;
+use std::mem::{transmute, forget};
 use std::ffi::{CStr, CString};
-use ffi_types::{FFIReturnValue, Error, YamlType};
+use std::ptr;
+use ffi_types::{FFIArrayReturnValue, FFIReturnValue, Error, YamlType};
 use yaml::evaluate;
 use environment::Environment;
 
 #[no_mangle]
-pub extern "C" fn yaml_create_from_string(s: *const c_char) -> *const Yaml {
+pub extern "C" fn yaml_create_from_string(s: *const c_char) -> FFIReturnValue<*const Yaml> {
     let yaml_str: String = unsafe { CStr::from_ptr(s).to_string_lossy().into_owned() };
     let mut docs = YamlLoader::load_from_str(yaml_str.as_str()).unwrap();
 
-    let doc = docs.pop();
-    
-    let yaml_ptr = unsafe { transmute(box doc) };
+    let doc_option = docs.pop();
 
-    yaml_ptr
+    if let Some(doc) = doc_option {
+        let yaml_ptr = unsafe { transmute(box doc) };
+
+        FFIReturnValue {
+            value: yaml_ptr,
+            error: Error::None as i32,
+        }
+    } else {
+        FFIReturnValue {
+            value: ptr::null(),
+            error: Error::InvalidString as i32,
+        }
+    }
 }
 
 #[no_mangle]
@@ -100,9 +111,45 @@ pub extern "C" fn yaml_string_get(yaml: *const Yaml) -> FFIReturnValue<*const c_
     }
 }
 
-//#[no_mangle]
-//pub extern "C" fn yaml_hash_keys(yaml: *const Yaml) -> FFIReturnValue<*const *const c_char> {
-//}
+#[no_mangle]
+pub extern "C" fn yaml_hash_keys(yaml: *const Yaml) -> FFIArrayReturnValue<*const *const c_char> {
+    let yaml = unsafe { &*yaml };
+
+    let mut keys: Vec<*const c_char> = Vec::new();
+
+    match yaml {
+        &Yaml::Hash(ref h) => {
+            for (key, value) in h {
+                match key {
+                    &Yaml::String(ref s) => {
+                        // no idea why as_ptr doesn't work with arrays of arrays :(
+                        let c_str = CString::new(s.as_str()).unwrap().into_raw();
+                        keys.push(c_str);
+                    }
+                    _ => {},
+                }
+            }
+
+            keys.shrink_to_fit();
+
+            let arr_ptr = keys.as_ptr();
+            let length = keys.len();
+
+            forget(keys);
+
+            FFIArrayReturnValue {
+                value: arr_ptr,
+                length: length as i32,
+                error: Error::None as i32,
+            }
+        }
+        _ => FFIArrayReturnValue {
+            value: keys.as_ptr(),
+            length: 0,
+            error: Error::WrongType as i32,
+        }
+    }
+}
 
 //#[no_mangle]
 //pub extern "C" fn yaml_hash_get(yaml: *const Yaml, key: *const c_char) -> FFIReturnValue<*const Yaml> {
