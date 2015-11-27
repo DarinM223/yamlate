@@ -158,7 +158,7 @@ pub extern "C" fn yaml_hash_get(yaml: *const Yaml, key: *const c_char) -> FFIRet
 
     match yaml {
         &Yaml::Hash(ref h) => {
-            if let Some(result) = h.get(&Yaml::String(hash_key)).clone() {
+            if let Some(result) = h.get(&Yaml::String(hash_key)) {
                 let yaml_ptr = unsafe { transmute(box result.clone()) };
 
                 FFIReturnValue {
