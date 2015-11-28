@@ -4,6 +4,7 @@ from python_ffi import Yamlate
 """
 Python code that tests the C FFI integration for the sample bug YAML
 Need to run cargo build --release before running this file
+You also need to be in the python/ directory
 """
 
 lib = ctypes.cdll.LoadLibrary("../target/release/libyamlate.dylib")

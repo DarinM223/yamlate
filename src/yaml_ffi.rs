@@ -119,14 +119,14 @@ pub extern "C" fn yaml_hash_keys(yaml: *const Yaml) -> FFIArrayReturnValue<*cons
 
     match yaml {
         &Yaml::Hash(ref h) => {
-            for (key, value) in h {
+            for (key, _) in h {
                 match key {
                     &Yaml::String(ref s) => {
                         // no idea why as_ptr doesn't work with arrays of arrays :(
                         let c_str = CString::new(s.as_str()).unwrap().into_raw();
                         keys.push(c_str);
                     }
-                    _ => {},
+                    _ => {}
                 }
             }
 
@@ -147,12 +147,14 @@ pub extern "C" fn yaml_hash_keys(yaml: *const Yaml) -> FFIArrayReturnValue<*cons
             value: keys.as_ptr(),
             length: 0,
             error: Error::WrongType as i32,
-        }
+        },
     }
 }
 
 #[no_mangle]
-pub extern "C" fn yaml_hash_get(yaml: *const Yaml, key: *const c_char) -> FFIReturnValue<*const Yaml> {
+pub extern "C" fn yaml_hash_get(yaml: *const Yaml,
+                                key: *const c_char)
+                                -> FFIReturnValue<*const Yaml> {
     let yaml = unsafe { &*yaml };
     let hash_key: String = unsafe { CStr::from_ptr(key).to_string_lossy().into_owned() };
 
@@ -179,10 +181,45 @@ pub extern "C" fn yaml_hash_get(yaml: *const Yaml, key: *const c_char) -> FFIRet
     }
 }
 
-//#[no_mangle]
-//pub extern "C" fn yaml_array_len(yaml: *const Yaml) -> FFIReturnValue<i32> {
-//}
+#[no_mangle]
+pub extern "C" fn yaml_array_len(yaml: *const Yaml) -> FFIReturnValue<i32> {
+    let yaml = unsafe { &*yaml };
 
-//#[no_mangle]
-//pub extern "C" fn yaml_array_get(yaml: *const Yaml) -> FFIReturnValue<*const Yaml> {
-//}
+    match yaml {
+        &Yaml::Array(ref a) => FFIReturnValue {
+            value: a.len() as i32,
+            error: Error::None as i32,
+        },
+        _ => FFIReturnValue {
+            value: 0,
+            error: Error::WrongType as i32,
+        },
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn yaml_array_get(yaml: *const Yaml, index: i32) -> FFIReturnValue<*const Yaml> {
+    let yaml = unsafe { &*yaml };
+
+    match yaml {
+        &Yaml::Array(ref a) => {
+            if let Some(result) = a.get(index as usize) {
+                let yaml_ptr = unsafe { transmute(box result.clone()) };
+
+                FFIReturnValue {
+                    value: yaml_ptr,
+                    error: Error::None as i32,
+                }
+            } else {
+                FFIReturnValue {
+                    value: ptr::null(),
+                    error: Error::NotDefined as i32,
+                }
+            }
+        }
+        _ => FFIReturnValue {
+            value: ptr::null(),
+            error: Error::WrongType as i32,
+        },
+    }
+}

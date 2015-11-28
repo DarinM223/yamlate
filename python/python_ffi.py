@@ -95,7 +95,7 @@ class Yaml:
         self.lib = lib
 
     def type(self):
-        return self.lib.yaml_type(yaml)
+        return self.lib.yaml_type(self.yaml)
 
     def evaluate(self, env):
         return CopyYaml(self.lib, self.lib.yaml_evaluate(self.yaml, env.environment))
@@ -113,7 +113,6 @@ class Yaml:
             handle_ffi_error(result.error)
 
         return result.value
-
 
     def get_string(self):
         result = self.lib.yaml_string_get(self.yaml)
@@ -138,6 +137,18 @@ class Yaml:
         if result.error != ffi_types.ErrorCode.ERROR_NONE:
             handle_ffi_error(result.error)
 
+        return CopyYaml(self.lib, result.value)
+
+    def array_len(self):
+        result = self.lib.yaml_array_len(self.yaml)
+        if result.error != ffi_types.ErrorCode.ERROR_NONE:
+            handle_ffi_error(result.error)
+        return result.value
+
+    def array_get(self, index):
+        result = self.lib.yaml_array_get(self.yaml, index)
+        if result.error != ffi_types.ErrorCode.ERROR_NONE:
+            handle_ffi_error(result.error)
         return CopyYaml(self.lib, result.value)
 
 class NewEnv:

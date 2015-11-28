@@ -14,6 +14,36 @@ class ErrorCode:
     ERROR_NOTDEFINED = -2
     ERROR_INVALIDSTRING = -3
 
+class YamlType:
+    """
+    The returned YAML type code values
+    """
+    INTEGER = 0
+    REAL = 1
+    STRING = 2
+    BOOLEAN = 3
+    ARRAY = 4
+    HASH = 5
+    NULL = 6
+
+def yaml_type_to_str(yaml):
+    if yaml == YamlType.INTEGER:
+        return 'Integer'
+    elif yaml == YamlType.REAL:
+        return 'Real'
+    elif yaml == YamlType.STRING:
+        return 'String'
+    elif yaml == YamlType.BOOLEAN:
+        return 'Boolean'
+    elif yaml == YamlType.ARRAY:
+        return 'Array'
+    elif yaml == YamlType.HASH:
+        return 'Hash'
+    elif yaml == YamlType.NULL:
+        return 'Null'
+    else:
+        return 'Unknown type'
+
 class Environment(ctypes.Structure):
     pass
 
@@ -87,4 +117,10 @@ def ffi_function_signatures(lib):
     
     lib.yaml_hash_get.argtypes = [yaml_p, ctypes.c_char_p]
     lib.yaml_hash_get.restype = YamlReturnType
+
+    lib.yaml_array_len.argtypes = [yaml_p]
+    lib.yaml_array_len.restype = IntReturnType
+
+    lib.yaml_array_get.argtypes = [yaml_p, ctypes.c_int]
+    lib.yaml_array_get.restype = YamlReturnType
 
