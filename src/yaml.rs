@@ -13,6 +13,37 @@ pub enum YamlType {
     Return(Yaml),
 }
 
+// same as apply_keywords but only works on nested keywords in while statements
+fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &mut IEnvironment) -> YamlType {
+    for (key, val) in h {
+        if let &Yaml::String(ref keyword) = key {
+            match keyword.as_str() {
+                "do" => {
+                    loop {
+                        // check proposition if true
+                        let result = evaluate_helper(&Yaml::String(prop_str.to_string()), env);
+                        if let YamlType::Value(Yaml::Integer(i)) = result {
+                            if i <= 0 {
+                                break;
+                            }
+                        }
+
+                        env.push();
+
+                        // evaluate commands inside do block
+                        evaluate_helper(val, env);
+
+                        env.pop();
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    YamlType::Value(Yaml::Hash(h.clone()))
+}
+
 // same as apply_keywords but only works on nested keywords in if statements
 // like do or else
 fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &mut IEnvironment) -> YamlType {
@@ -52,10 +83,12 @@ fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &mut 
 // applies the effects of keywords in a YAML hash
 fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlType {
     match s {
-        "if" => {
+        "while" | "if" => {
             if let &Yaml::Array(ref arr) = v {
                 let mut prop_str = String::new();
                 for val in arr {
+                    // Builds main propositional logic by anding the logic statements in the list
+                    // together
                     if let &Yaml::String(ref s) = val {
                         if s.as_str().contains("~>") {
                             let split_vec = s.as_str().split("~>").collect::<Vec<_>>();
@@ -69,7 +102,12 @@ fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlTyp
                             }
                         }
                     } else if let &Yaml::Hash(ref h) = val {
-                        return apply_nested_if_keywords(h, prop_str.clone().as_str(), env);
+                        // applies logic based on the type of keyword
+                        match s {
+                            "if" => return apply_nested_if_keywords(h, prop_str.clone().as_str(), env),
+                            "while" => return apply_nested_while_keywords(h, prop_str.clone().as_str(), env),
+                            _ => {}
+                        }
                     }
                 }
             }
@@ -269,4 +307,25 @@ fn test_local_variable() {
     assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
 
     assert_eq!(env.get("c".to_string()), None);
+}
+
+#[test]
+fn test_while_loop() {
+    let s = "
+    foo:
+      - '~> a := 0'
+      - while:
+        - '~> a != 5'
+        - do:
+          - '~> a = a + 1'
+      - '~> a'
+    ";
+
+    let mut env = Environment::new();
+
+    let docs = YamlLoader::load_from_str(s).unwrap();
+
+    assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(5));
+
+    assert_eq!(env.get("a".to_string()), Some(&AST::Number(5)));
 }

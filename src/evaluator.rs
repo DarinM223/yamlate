@@ -91,7 +91,7 @@ impl<'a> Evaluator<'a> {
                 }
             }
             "!=" => {
-                if result1.eq(&result2) {
+                if !result1.eq(&result2) {
                     Ok(AST::Number(1))
                 } else {
                     Ok(AST::Number(0))
