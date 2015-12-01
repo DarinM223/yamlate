@@ -202,8 +202,8 @@ fn test_yaml_eval() {
     ";
 
     let mut env = Environment::new();
-    env.set("a".to_string(), AST::Number(1));
-    env.set("b".to_string(), AST::Number(2));
+    env.set("a", AST::Number(1));
+    env.set("b", AST::Number(2));
 
     let docs = YamlLoader::load_from_str(s).unwrap();
 
@@ -227,8 +227,8 @@ fn test_yaml_else() {
     ";
 
     let mut env = Environment::new();
-    env.set("a".to_string(), AST::Number(1));
-    env.set("b".to_string(), AST::Number(2));
+    env.set("a", AST::Number(1));
+    env.set("b", AST::Number(2));
 
     let docs = YamlLoader::load_from_str(s).unwrap();
 
@@ -250,14 +250,14 @@ fn test_return() {
     ";
 
     let mut env = Environment::new();
-    env.set("a".to_string(), AST::Number(1));
-    env.set("b".to_string(), AST::Number(2));
+    env.set("a", AST::Number(1));
+    env.set("b", AST::Number(2));
 
     let docs = YamlLoader::load_from_str(s).unwrap();
 
     assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
 
-    assert_eq!(env.get("a".to_string()), Some(&AST::Number(1)));
+    assert_eq!(env.get("a"), Some(&AST::Number(1)));
 }
 
 #[test]
@@ -275,8 +275,8 @@ fn test_return_last_val() {
     ";
 
     let mut env = Environment::new();
-    env.set("a".to_string(), AST::Number(1));
-    env.set("b".to_string(), AST::Number(2));
+    env.set("a", AST::Number(1));
+    env.set("b", AST::Number(2));
 
     let docs = YamlLoader::load_from_str(s).unwrap();
 
@@ -299,14 +299,14 @@ fn test_local_variable() {
     ";
 
     let mut env = Environment::new();
-    env.set("a".to_string(), AST::Number(1));
-    env.set("b".to_string(), AST::Number(2));
+    env.set("a", AST::Number(1));
+    env.set("b", AST::Number(2));
 
     let docs = YamlLoader::load_from_str(s).unwrap();
 
     assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
 
-    assert_eq!(env.get("c".to_string()), None);
+    assert_eq!(env.get("c"), None);
 }
 
 #[test]
@@ -327,5 +327,5 @@ fn test_while_loop() {
 
     assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(5));
 
-    assert_eq!(env.get("a".to_string()), Some(&AST::Number(5)));
+    assert_eq!(env.get("a"), Some(&AST::Number(5)));
 }

@@ -16,7 +16,7 @@ pub extern "C" fn environment_set_integer(env: *mut Environment, name: *const c_
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
-    environment.set(key, AST::Number(value));
+    environment.set(key.as_str(), AST::Number(value));
 }
 
 #[no_mangle]
@@ -27,7 +27,7 @@ pub extern "C" fn environment_set_string(env: *mut Environment,
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
     let val: String = unsafe { CStr::from_ptr(value).to_string_lossy().into_owned() };
 
-    environment.set(key, AST::String(val));
+    environment.set(key.as_str(), AST::String(val));
 }
 
 #[no_mangle]
@@ -35,7 +35,7 @@ pub extern "C" fn environment_set_decimal(env: *mut Environment, name: *const c_
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
-    environment.set(key, AST::Decimal(value));
+    environment.set(key.as_str(), AST::Decimal(value));
 }
 
 #[no_mangle]
@@ -45,7 +45,7 @@ pub extern "C" fn environment_get_integer(env: *mut Environment,
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
-    match environment.get(key) {
+    match environment.get(key.as_str()) {
         Some(&AST::Number(val)) => FFIReturnValue {
             value: val,
             error: Error::None as i32,
@@ -68,7 +68,7 @@ pub extern "C" fn environment_get_string(env: *mut Environment,
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
-    match environment.get(key) {
+    match environment.get(key.as_str()) {
         Some(&AST::String(ref val)) => FFIReturnValue {
             value: CString::new(val.as_str()).unwrap().as_ptr(),
             error: Error::None as i32,
@@ -91,7 +91,7 @@ pub extern "C" fn environment_get_decimal(env: *mut Environment,
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
-    match environment.get(key) {
+    match environment.get(key.as_str()) {
         Some(&AST::Decimal(val)) => FFIReturnValue {
             value: val,
             error: Error::None as i32,

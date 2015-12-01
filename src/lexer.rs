@@ -1,6 +1,7 @@
 use ast::AST;
 use helpers::is_operator;
 use std::collections::VecDeque;
+use errors::LexError;
 
 #[derive(Clone, PartialEq)]
 enum WordState {
@@ -12,119 +13,129 @@ enum WordState {
     None,
 }
 
-fn split_string_letter(ch: char,
-                       _variable_array: &mut VecDeque<AST>,
-                       operator_array: &mut VecDeque<String>,
-                       curr_state: &WordState,
-                       curr_str: String)
-                       -> Result<(String, WordState), String> {
-    match curr_state {
-        &ref state @ WordState::Variable | &ref state @ WordState::String =>
-            Ok((curr_str + ch.to_string().as_str(), state.clone())),
-        &WordState::Number | &WordState::Decimal =>
-            Err("Number cannot have a letter after it".to_string()),
-        &WordState::Operator => {
-            operator_array.push_front(curr_str);
-            Ok((ch.to_string(), WordState::Variable))
-        }
-        &WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Variable)),
-    }
+#[derive(Clone, PartialEq)]
+enum StringBuildType {
+    Letter,
+    Digit,
+    Operator,
+    Quote,
+    Dot,
 }
 
-fn split_string_digit(ch: char,
-                      _variable_array: &mut VecDeque<AST>,
-                      operator_array: &mut VecDeque<String>,
-                      curr_state: &WordState,
-                      curr_str: String)
-                      -> Result<(String, WordState), String> {
-    match curr_state {
-        &ref state @ WordState::Variable |
-        &ref state @ WordState::Number |
-        &ref state @ WordState::Decimal |
-        &ref state @ WordState::String => Ok((curr_str + ch.to_string().as_str(), state.clone())),
-        &WordState::Operator => {
-            operator_array.push_front(curr_str);
-            Ok((ch.to_string(), WordState::Number))
-        }
-        &WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Number)),
-    }
-}
+type LexResult = Result<(String, WordState), LexError>;
 
-fn split_string_operator(ch: char,
-                         variable_array: &mut VecDeque<AST>,
-                         operator_array: &mut VecDeque<String>,
-                         curr_state: &WordState,
-                         curr_str: String)
-                         -> Result<(String, WordState), String> {
-    match curr_state {
-        &WordState::Variable => {
-            variable_array.push_front(AST::Variable(curr_str));
-            Ok((ch.to_string(), WordState::Operator))
-        }
-        &WordState::Number => {
-            variable_array.push_front(AST::Number(curr_str.as_str().parse().unwrap()));
-            Ok((ch.to_string(), WordState::Operator))
-        }
-        &WordState::Decimal => {
-            variable_array.push_front(AST::Decimal(curr_str.as_str().parse().unwrap()));
-            Ok((ch.to_string(), WordState::Operator))
-        }
-        &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
-        &WordState::Operator => {
-            let new_str;
-            if is_operator((curr_str.clone() + ch.to_string().as_str()).as_str()) {
-                new_str = curr_str + ch.to_string().as_str();
-            } else {
-                operator_array.push_front(curr_str);
-                new_str = ch.to_string();
+/// Builds the current string based on a character and
+/// adds it to the variable or operator deques when done
+/// TODO: clean up this mess
+fn build_string(build_type: StringBuildType,
+                ch: char,
+                variable_array: &mut VecDeque<AST>,
+                operator_array: &mut VecDeque<String>,
+                curr_state: &WordState,
+                curr_str: String)
+                -> LexResult {
+    match build_type {
+        StringBuildType::Letter => {
+            match curr_state {
+                &ref state @ WordState::Variable | &ref state @ WordState::String =>
+                    Ok((curr_str + ch.to_string().as_str(), state.clone())),
+                &WordState::Number | &WordState::Decimal =>
+                    Err(LexError::new("Number cannot have a letter after it")),
+                &WordState::Operator => {
+                    operator_array.push_front(curr_str);
+                    Ok((ch.to_string(), WordState::Variable))
+                }
+                &WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Variable)),
             }
-
-            Ok((new_str, WordState::Operator))
         }
-        &WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Operator)),
+        StringBuildType::Digit => {
+            match curr_state {
+                &ref state @ WordState::Variable |
+                &ref state @ WordState::Number |
+                &ref state @ WordState::Decimal |
+                &ref state @ WordState::String =>
+                    Ok((curr_str + ch.to_string().as_str(), state.clone())),
+                &WordState::Operator => {
+                    operator_array.push_front(curr_str);
+                    Ok((ch.to_string(), WordState::Number))
+                }
+                &WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Number)),
+            }
+        }
+        StringBuildType::Operator => {
+            match curr_state {
+                &WordState::Variable => {
+                    variable_array.push_front(AST::Variable(curr_str));
+                    Ok((ch.to_string(), WordState::Operator))
+                }
+                &WordState::Number => {
+                    variable_array.push_front(AST::Number(curr_str.as_str().parse().unwrap()));
+                    Ok((ch.to_string(), WordState::Operator))
+                }
+                &WordState::Decimal => {
+                    variable_array.push_front(AST::Decimal(curr_str.as_str().parse().unwrap()));
+                    Ok((ch.to_string(), WordState::Operator))
+                }
+                &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
+                &WordState::Operator => {
+                    let new_str;
+                    if is_operator((curr_str.clone() + ch.to_string().as_str()).as_str()) {
+                        new_str = curr_str + ch.to_string().as_str();
+                    } else {
+                        operator_array.push_front(curr_str);
+                        new_str = ch.to_string();
+                    }
+
+                    Ok((new_str, WordState::Operator))
+                }
+                &WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Operator)),
+            }
+        }
+        StringBuildType::Quote => {
+            match curr_state {
+                &WordState::String => {
+                    variable_array.push_front(AST::String(curr_str));
+                    Ok((String::new(), WordState::None))
+                }
+                &WordState::Number | &WordState::Decimal | &WordState::Variable =>
+                    Err(LexError::new("Cannot create a string after invalid type")),
+                &WordState::Operator => {
+                    operator_array.push_front(curr_str);
+                    Ok((String::new(), WordState::String))
+                }
+                &WordState::None => Ok((curr_str, WordState::String)),
+            }
+        }
+        StringBuildType::Dot => {
+            match curr_state {
+                &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
+                &WordState::Number => Ok((curr_str + ch.to_string().as_str(), WordState::Decimal)),
+                &WordState::Operator | &WordState::Decimal | &WordState::Variable =>
+                    Err(LexError::new("Cannot have a dot after")),
+                &WordState::None => Err(LexError::new("Cannot start with dot")),
+            }
+        }
     }
 }
 
-fn split_string_quote(_ch: char,
-                      variable_array: &mut VecDeque<AST>,
-                      operator_array: &mut VecDeque<String>,
-                      curr_state: &WordState,
-                      curr_str: String)
-                      -> Result<(String, WordState), String> {
-    match curr_state {
-        &WordState::String => {
-            variable_array.push_front(AST::String(curr_str));
-            Ok((String::new(), WordState::None))
-        }
-        &WordState::Number | &WordState::Decimal | &WordState::Variable =>
-            Err("Cannot create a string after invalid type".to_string()),
-        &WordState::Operator => {
-            operator_array.push_front(curr_str);
-            Ok((String::new(), WordState::String))
-        }
-        &WordState::None => Ok((curr_str, WordState::String)),
-    }
-}
-
-fn split_string_dot(ch: char,
-                    _variable_array: &mut VecDeque<AST>,
-                    _operator_array: &mut VecDeque<String>,
-                    curr_state: &WordState,
-                    curr_str: String)
-                    -> Result<(String, WordState), String> {
-    match curr_state {
-        &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
-        &WordState::Number => Ok((curr_str + ch.to_string().as_str(), WordState::Decimal)),
-        &WordState::Operator | &WordState::Decimal | &WordState::Variable =>
-            Err("Cannot have a dot after".to_string()),
-        &WordState::None => Err("Cannot start with dot".to_string()),
+fn get_build_type(ch: char) -> StringBuildType {
+    if ch.is_alphabetic() || ch == '_' {
+        StringBuildType::Letter
+    } else if ch.is_digit(10) {
+        StringBuildType::Digit
+    } else if ch == '\"' {
+        StringBuildType::Quote
+    } else if ch == '.' {
+        StringBuildType::Dot
+    } else {
+        StringBuildType::Operator
     }
 }
 
 /// Parses a word split from split_string and detects operators 
 /// Returns a deque of variables/constants and a deque of operators
 /// TODO: clean up this mess
-pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), String> {
+pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), LexError> {
     let mut variable_array: VecDeque<AST> = VecDeque::new();
     let mut operator_array = VecDeque::new();
 
@@ -132,32 +143,20 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), String
     let mut curr_str = String::new();
 
     for ch in s.to_string().chars() {
-        let split_fn: fn(char, &mut VecDeque<AST>, &mut VecDeque<String>, &WordState, String)
-    -> Result<(String, WordState), String>;
-
-        if ch.is_alphabetic() || ch == '_' {
-            split_fn = split_string_letter;
-        } else if ch.is_digit(10) {
-            split_fn = split_string_digit;
-        } else if ch == ' ' || ch == '\t' {
+        if ch == ' ' || ch == '\t' {
             // ignore spaces and tabs except for inside a string
             if curr_state == WordState::String {
                 curr_str = curr_str + ch.to_string().as_str();
             }
             continue;
-        } else if ch == '\"' {
-            split_fn = split_string_quote;
-        } else if ch == '.' {
-            split_fn = split_string_dot;
-        } else {
-            split_fn = split_string_operator;
         }
 
-        match split_fn(ch,
-                       &mut variable_array,
-                       &mut operator_array,
-                       &mut curr_state,
-                       curr_str) {
+        match build_string(get_build_type(ch),
+                           ch,
+                           &mut variable_array,
+                           &mut operator_array,
+                           &mut curr_state,
+                           curr_str) {
             Ok((new_str, new_state)) => {
                 curr_str = new_str;
                 curr_state = new_state;

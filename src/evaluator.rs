@@ -4,21 +4,20 @@ use ast::AST;
 use environment::{IEnvironment, Environment};
 use helpers::ast_to_operator;
 use self::num::traits::Num;
+use errors::EvalError;
 
 pub struct Evaluator<'a> {
     env: &'a mut IEnvironment,
 }
+
+type ASTResult = Result<AST, EvalError>;
 
 impl<'a> Evaluator<'a> {
     pub fn new(env: &'a mut IEnvironment) -> Self {
         Evaluator { env: env }
     }
 
-    fn evaluate_arithmetic(&mut self,
-                           operator: &str,
-                           child1: AST,
-                           child2: AST)
-                           -> Result<AST, String> {
+    fn evaluate_arithmetic(&mut self, operator: &str, child1: AST, child2: AST) -> ASTResult {
         let result1 = self.evaluate(child1);
         let result2 = self.evaluate(child2);
 
@@ -31,7 +30,7 @@ impl<'a> Evaluator<'a> {
                         Ok(AST::Decimal(apply_arithmetic_operator(operator, param1 as f64, param2))),
                     Ok(AST::Number(param2)) =>
                         Ok(AST::Number(apply_arithmetic_operator(operator, param1, param2))),
-                    _ => Err("Right hand result is not a numeric value".to_string()),
+                    _ => Err(EvalError::new("Right hand result is not a numeric value")),
                 }
             }
             Ok(AST::Decimal(val)) => {
@@ -42,18 +41,14 @@ impl<'a> Evaluator<'a> {
                         Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2 as f64))),
                     Ok(AST::Decimal(param2)) =>
                         Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2))),
-                    _ => Err("Right hand result is not a numeric value".to_string()),
+                    _ => Err(EvalError::new("Right hand result is not a numeric value")),
                 }
             }
-            _ => Err("Left hand result is not a numeric value".to_string()),
+            _ => Err(EvalError::new("Left hand result is not a numeric value")),
         }
     }
 
-    fn evaluate_set_variable(&mut self,
-                             operator: &str,
-                             child1: AST,
-                             child2: AST)
-                             -> Result<AST, String> {
+    fn evaluate_set_variable(&mut self, operator: &str, child1: AST, child2: AST) -> ASTResult {
         let result = self.evaluate(child2).unwrap_or(AST::None);
         if result == AST::None {
             return Ok(result);
@@ -61,24 +56,20 @@ impl<'a> Evaluator<'a> {
 
         if let AST::Variable(name) = child1 {
             if operator == ":=" {
-                self.env.set(name, result.clone());
+                self.env.set(name.as_str(), result.clone());
             } else if operator == "=" {
-                self.env.assign(name, result.clone());
+                self.env.assign(name.as_str(), result.clone());
             } else {
-                return Err("Variable setting operator not implemented".to_string());
+                return Err(EvalError::new("Variable setting operator not implemented"));
             }
 
             Ok(result)
         } else {
-            Err("Left hand result must be a variable".to_string())
+            Err(EvalError::new("Left hand result must be a variable"))
         }
     }
 
-    fn evaluate_equality(&mut self,
-                         operator: &str,
-                         child1: AST,
-                         child2: AST)
-                         -> Result<AST, String> {
+    fn evaluate_equality(&mut self, operator: &str, child1: AST, child2: AST) -> ASTResult {
         let result1 = self.evaluate(child1).unwrap_or(AST::None);
         let result2 = self.evaluate(child2).unwrap_or(AST::None);
 
@@ -97,15 +88,11 @@ impl<'a> Evaluator<'a> {
                     Ok(AST::Number(0))
                 }
             }
-            _ => Err("Equality operator not implemented".to_string()),
+            _ => Err(EvalError::new("Equality operator not implemented")),
         }
     }
 
-    fn evaluate_boolean(&mut self,
-                        operator: &str,
-                        child1: AST,
-                        child2: AST)
-                        -> Result<AST, String> {
+    fn evaluate_boolean(&mut self, operator: &str, child1: AST, child2: AST) -> ASTResult {
         if let AST::Number(val1) = self.evaluate(child1).unwrap_or(AST::None) {
             if val1 == 0 && operator == "&&" || val1 > 0 && operator == "||" {
                 return Ok(AST::Number(val1));
@@ -114,21 +101,21 @@ impl<'a> Evaluator<'a> {
             if let AST::Number(val2) = self.evaluate(child2).unwrap_or(AST::None) {
                 Ok(AST::Number(val2))
             } else {
-                Err("Right hand result must be a number".to_string())
+                Err(EvalError::new("Right hand result must be a number"))
             }
         } else {
-            Err("Left hand result must be a number".to_string())
+            Err(EvalError::new("Left hand result must be a number"))
         }
     }
 
     /// evaluate evaluates the given AST and returns an AST 
     /// of the result 
-    pub fn evaluate(&mut self, ast: AST) -> Result<AST, String> {
+    pub fn evaluate(&mut self, ast: AST) -> ASTResult {
         let op = ast_to_operator(&ast);
         match ast {
-            AST::Variable(name) => match self.env.get(name) {
+            AST::Variable(name) => match self.env.get(name.as_str()) {
                 Some(val) => Ok(val.clone()),
-                None => Err("Variable is not in environment".to_string()),
+                None => Err(EvalError::new("Variable is not in environment")),
             },
 
             ast @ AST::Number(_) | ast @ AST::String(_) | ast @ AST::Decimal(_) => Ok(ast),
@@ -151,7 +138,7 @@ impl<'a> Evaluator<'a> {
             AST::Modulo(box child1, box child2) =>
                 self.evaluate_arithmetic(op.as_str(), child1, child2),
 
-            _ => Err("Operation is not implemented yet".to_string()),
+            _ => Err(EvalError::new("Operation is not implemented yet")),
         }
     }
 }
@@ -204,10 +191,10 @@ fn test_variable_ast() {
     // is "35" when a is 5, b is 3, c is 2, and d is 6
 
     let mut env = Environment::new();
-    env.set("a".to_string(), AST::Number(5));
-    env.set("b".to_string(), AST::Number(3));
-    env.set("c".to_string(), AST::Number(2));
-    env.set("d".to_string(), AST::Number(6));
+    env.set("a", AST::Number(5));
+    env.set("b", AST::Number(3));
+    env.set("c", AST::Number(2));
+    env.set("d", AST::Number(6));
 
     let mut evaluator = Evaluator::new(&mut env);
 
@@ -233,9 +220,9 @@ fn test_float_ast() {
     // is "27.5" when a is 5, b is 2, and c is 6
 
     let mut env = Environment::new();
-    env.set("a".to_string(), AST::Number(5));
-    env.set("b".to_string(), AST::Number(2));
-    env.set("c".to_string(), AST::Number(6));
+    env.set("a", AST::Number(5));
+    env.set("b", AST::Number(2));
+    env.set("c", AST::Number(6));
 
     let mut evaluator = Evaluator::new(&mut env);
 
@@ -274,7 +261,7 @@ fn test_declare_assign() {
                                           box AST::Plus(box AST::Number(2), box AST::Number(3))));
     let result = evaluator.evaluate(ast);
     assert_eq!(result, Ok(AST::Number(50)));
-    assert_eq!(evaluator.env.get("x".to_string()), Some(&AST::Number(50)));
+    assert_eq!(evaluator.env.get("x"), Some(&AST::Number(50)));
 
     evaluator.env.push();
 
@@ -285,7 +272,7 @@ fn test_declare_assign() {
     assert_eq!(result, Ok(AST::Number(3)));
 
     evaluator.env.pop();
-    assert_eq!(evaluator.env.get("x".to_string()), Some(&AST::Number(3)));
+    assert_eq!(evaluator.env.get("x"), Some(&AST::Number(3)));
 }
 
 #[test]

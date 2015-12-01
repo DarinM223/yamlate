@@ -8,6 +8,7 @@ extern crate libc;
 #[macro_use]
 extern crate lazy_static;
 
+mod errors;
 mod helpers;
 mod ast;
 mod parser;
