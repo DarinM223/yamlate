@@ -1,7 +1,7 @@
 yamlate
 =========
 
-A data templating language extended from YAML written in Rust
+A cross-language interpreter library that dynamically evaluates YAML attributes given variable bindings
 
 [![Build Status](https://travis-ci.org/DarinM223/yamlate.svg)](https://travis-ci.org/DarinM223/yamlate)
 
@@ -20,7 +20,7 @@ behavior. Some change their wing color based on the season, and others change th
 Once a bug changes their wing color when another bug is nearby, the other bug leaves and there is no longer another bug nearby. 
 
 One way to model this is to hardcode the bug behavior using something similar to a strategy pattern. You could create a thousand different code 
-files for each bug. 
+files for all of the bugs. 
 
 One problem with this is that writing code for every bug ties the data to the code which makes it hard for non-developers to 
 understand the core logic and ties the data to a specific language (Java, Python, etc).
@@ -93,16 +93,10 @@ Note: the python wrapper is pretty verbose, hopefully I can refactor it into som
 For the full example look at the python/python_example_bug.py for the python file and the examples/bug.yaml for the
 YAML file
 
-### Drawbacks:
-
-* Slow because it is essentially an unoptimized interpreter without JIT
-* Not the only language that does this (higher performing languages like Lua are widely used to
-script similar cases like Redis extensions or AI for different enemies in games) 
-* "code" currently is not very readable so might be difficult for non-developers to understand 
-
 ### TODO:
 
 * Fix bugs in interpreter/FFI
 * Add Ruby wrapper
 * Add support for more complex language features like functions, structures
 * Be able to access other fields in the YAML file as a variable
+
