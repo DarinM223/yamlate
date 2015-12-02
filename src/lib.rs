@@ -2,6 +2,9 @@
 #![feature(box_patterns)]
 #![feature(box_syntax)]
 
+#![feature(plugin)]
+#![plugin(clippy)]
+
 extern crate yaml_rust;
 extern crate libc;
 

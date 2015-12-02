@@ -4,28 +4,28 @@ use ast::AST;
 lazy_static! {
     static ref OPERATORS: HashMap<String, i32> = {
         let mut hash_map = HashMap::new();
-        hash_map.insert("(".to_string(), -1); // "(" ignores operator precedence
-        hash_map.insert(")".to_string(), 8); 
+        hash_map.insert("(".to_owned(), -1); // "(" ignores operator precedence
+        hash_map.insert(")".to_owned(), 8); 
 
-        hash_map.insert("!".to_string(), 7);
+        hash_map.insert("!".to_owned(), 7);
 
-        hash_map.insert("^".to_string(), 6);
+        hash_map.insert("^".to_owned(), 6);
 
-        hash_map.insert("*".to_string(), 5);
-        hash_map.insert("/".to_string(), 5);
-        hash_map.insert("%".to_string(), 5);
+        hash_map.insert("*".to_owned(), 5);
+        hash_map.insert("/".to_owned(), 5);
+        hash_map.insert("%".to_owned(), 5);
 
-        hash_map.insert("+".to_string(), 4);
-        hash_map.insert("-".to_string(), 4);
+        hash_map.insert("+".to_owned(), 4);
+        hash_map.insert("-".to_owned(), 4);
 
-        hash_map.insert("!=".to_string(), 3);
-        hash_map.insert("==".to_string(), 3);
+        hash_map.insert("!=".to_owned(), 3);
+        hash_map.insert("==".to_owned(), 3);
 
-        hash_map.insert("&&".to_string(), 2);
-        hash_map.insert("||".to_string(), 1);
+        hash_map.insert("&&".to_owned(), 2);
+        hash_map.insert("||".to_owned(), 1);
 
-        hash_map.insert("=".to_string(), 0);
-        hash_map.insert(":=".to_string(), 0);
+        hash_map.insert("=".to_owned(), 0);
+        hash_map.insert(":=".to_owned(), 0);
 
         hash_map
     };
@@ -54,23 +54,23 @@ pub fn operator_precedence(string: &str) -> i32 {
 }
 
 pub fn ast_to_operator(ast: &AST) -> String {
-    match ast {
-        &AST::Declare(_, _) => ":=",
-        &AST::Assign(_, _) => "=",
-        &AST::Equal(_, _) => "==",
-        &AST::NotEqual(_, _) => "!=",
-        &AST::Plus(_, _) => "+",
-        &AST::Minus(_, _) => "-",
-        &AST::Times(_, _) => "*",
-        &AST::Divide(_, _) => "/",
-        &AST::Modulo(_, _) => "%",
-        &AST::Exponent(_, _) => "^",
-        &AST::And(_, _) => "&&",
-        &AST::Or(_, _) => "||", 
-        &AST::Not(_) => "!",
+    match *ast {
+        AST::Declare(_, _) => ":=",
+        AST::Assign(_, _) => "=",
+        AST::Equal(_, _) => "==",
+        AST::NotEqual(_, _) => "!=",
+        AST::Plus(_, _) => "+",
+        AST::Minus(_, _) => "-",
+        AST::Times(_, _) => "*",
+        AST::Divide(_, _) => "/",
+        AST::Modulo(_, _) => "%",
+        AST::Exponent(_, _) => "^",
+        AST::And(_, _) => "&&",
+        AST::Or(_, _) => "||", 
+        AST::Not(_) => "!",
         _ => "",
     }
-    .to_string()
+    .to_owned()
 }
 
 pub fn operator_to_ast(operator: &str, ast1: AST, ast2: AST) -> AST {

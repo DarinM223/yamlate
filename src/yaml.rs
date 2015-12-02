@@ -16,27 +16,24 @@ pub enum YamlType {
 // same as apply_keywords but only works on nested keywords in while statements
 fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &mut IEnvironment) -> YamlType {
     for (key, val) in h {
-        if let &Yaml::String(ref keyword) = key {
-            match keyword.as_str() {
-                "do" => {
-                    loop {
-                        // check proposition if true
-                        let result = evaluate_helper(&Yaml::String(prop_str.to_string()), env);
-                        if let YamlType::Value(Yaml::Integer(i)) = result {
-                            if i <= 0 {
-                                break;
-                            }
+        if let Yaml::String(ref keyword) = *key {
+            if let "do" = keyword.as_str() {
+                loop {
+                    // check proposition if true
+                    let result = evaluate_helper(&Yaml::String(prop_str.to_owned()), env);
+                    if let YamlType::Value(Yaml::Integer(i)) = result {
+                        if i <= 0 {
+                            break;
                         }
-
-                        env.push();
-
-                        // evaluate commands inside do block
-                        evaluate_helper(val, env);
-
-                        env.pop();
                     }
+
+                    env.push();
+
+                    // evaluate commands inside do block
+                    evaluate_helper(val, env);
+
+                    env.pop();
                 }
-                _ => {}
             }
         }
     }
@@ -48,8 +45,8 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &m
 // like do or else
 fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &mut IEnvironment) -> YamlType {
     for (key, val) in h {
-        if let &Yaml::String(ref keyword) = key {
-            let result = evaluate_helper(&Yaml::String(prop_str.to_string()), env);
+        if let Yaml::String(ref keyword) = *key {
+            let result = evaluate_helper(&Yaml::String(prop_str.to_owned()), env);
 
             match keyword.as_str() {
                 "do" => {
@@ -84,12 +81,12 @@ fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &mut 
 fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlType {
     match s {
         "while" | "if" => {
-            if let &Yaml::Array(ref arr) = v {
+            if let Yaml::Array(ref arr) = *v {
                 let mut prop_str = String::new();
                 for val in arr {
                     // Builds main propositional logic by anding the logic statements in the list
                     // together
-                    if let &Yaml::String(ref s) = val {
+                    if let Yaml::String(ref s) = *val {
                         if s.as_str().contains("~>") {
                             let split_vec = s.as_str().split("~>").collect::<Vec<_>>();
                             let prop = split_vec[1];
@@ -101,7 +98,7 @@ fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlTyp
                                 prop_str = format!("{} && ({})", prop_str, prop.clone());
                             }
                         }
-                    } else if let &Yaml::Hash(ref h) = val {
+                    } else if let Yaml::Hash(ref h) = *val {
                         // applies logic based on the type of keyword
                         match s {
                             "if" => return apply_nested_if_keywords(h, prop_str.clone().as_str(), env),
@@ -127,8 +124,8 @@ fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlTyp
 
 // evaluates the result of a fragment of YAML
 fn evaluate_helper(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
-    match yaml {
-        &Yaml::String(ref s) => {
+    match *yaml {
+        Yaml::String(ref s) => {
             if s.as_str().contains("~>") {
                 let split_vec = s.as_str().split("~>").collect::<Vec<_>>();
                 let mut evaluator = Evaluator::new(env);
@@ -142,13 +139,13 @@ fn evaluate_helper(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
                     AST::Decimal(d) => Yaml::Real(d.to_string()),
                     AST::Number(n) => Yaml::Integer(n as i64),
                     AST::String(s) => Yaml::String(s),
-                    _ => Yaml::String(split_vec[1].to_string()),
+                    _ => Yaml::String(split_vec[1].to_owned()),
                 })
             } else {
                 YamlType::Value(Yaml::String(s.clone()))
             }
         }
-        &Yaml::Array(ref arr) => {
+        Yaml::Array(ref arr) => {
             let mut last_value: Option<Yaml> = None;
             for v in arr {
                 let result = evaluate_helper(v, env);
@@ -165,15 +162,15 @@ fn evaluate_helper(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
                 YamlType::Value(Yaml::Array(arr.clone()))
             }
         }
-        &Yaml::Hash(ref h) => {
+        Yaml::Hash(ref h) => {
             for (k, v) in h {
-                if let &Yaml::String(ref s) = k {
+                if let Yaml::String(ref s) = *k {
                     return apply_keyword(s.as_str(), k, v, env);
                 }
             }
             YamlType::Value(Yaml::Hash(h.clone()))
         }
-        &ref val @ _ => YamlType::Value(val.clone()),
+        ref val @ _ => YamlType::Value(val.clone()),
     }
 }
 

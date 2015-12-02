@@ -49,7 +49,7 @@ impl Parser {
         }
 
         if paren_count != 0 {
-            self.err = Err("Parentheses do not match".to_string());
+            self.err = Err("Parentheses do not match".to_owned());
         }
     }
 
@@ -68,7 +68,7 @@ impl Parser {
             // an operator with precedence -1 ignores precedence rules
             let operator = operators.pop_back().unwrap();
 
-            if self.op_stack.len() > 0 {
+            if !self.op_stack.is_empty() {
                 if let Some(front_operator) = self.op_stack.front() {
                     if operator_precedence(operator.as_str()) <
                        operator_precedence(front_operator.as_str()) &&
@@ -119,10 +119,10 @@ fn test_collapse_stacks() {
     parser.var_stack.push_front(AST::Number(2));
     parser.var_stack.push_front(AST::Number(3));
 
-    parser.op_stack.push_front("*".to_string());
-    parser.op_stack.push_front("(".to_string());
-    parser.op_stack.push_front("+".to_string());
-    parser.op_stack.push_front(")".to_string());
+    parser.op_stack.push_front("*".to_owned());
+    parser.op_stack.push_front("(".to_owned());
+    parser.op_stack.push_front("+".to_owned());
+    parser.op_stack.push_front(")".to_owned());
 
     parser.collapse_stacks(-2);
 
@@ -159,13 +159,13 @@ fn test_parse_to_ast() {
     variables.push_front(AST::Number(6));
     variables.push_front(AST::Number(2));
 
-    operators.push_front("+".to_string());
-    operators.push_front("!".to_string());
-    operators.push_front("^".to_string());
-    operators.push_front("(".to_string());
-    operators.push_front("&&".to_string());
-    operators.push_front(")".to_string());
-    operators.push_front("*".to_string());
+    operators.push_front("+".to_owned());
+    operators.push_front("!".to_owned());
+    operators.push_front("^".to_owned());
+    operators.push_front("(".to_owned());
+    operators.push_front("&&".to_owned());
+    operators.push_front(")".to_owned());
+    operators.push_front("*".to_owned());
 
     let result = parser.parse_to_ast(&mut variables, &mut operators);
 
@@ -195,7 +195,7 @@ fn test_parse_to_ast_simple() {
     variables.push_front(AST::Number(1));
     variables.push_front(AST::Number(2));
 
-    operators.push_front("+".to_string());
+    operators.push_front("+".to_owned());
 
     let result = parser.parse_to_ast(&mut variables, &mut operators);
 

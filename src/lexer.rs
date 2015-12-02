@@ -36,48 +36,48 @@ fn build_string(build_type: StringBuildType,
                 -> LexResult {
     match build_type {
         StringBuildType::Letter => {
-            match curr_state {
-                &ref state @ WordState::Variable | &ref state @ WordState::String =>
+            match *curr_state {
+                ref state @ WordState::Variable | ref state @ WordState::String =>
                     Ok((curr_str + ch.to_string().as_str(), state.clone())),
-                &WordState::Number | &WordState::Decimal =>
+                WordState::Number | WordState::Decimal =>
                     Err(LexError::new("Number cannot have a letter after it")),
-                &WordState::Operator => {
+                WordState::Operator => {
                     operator_array.push_front(curr_str);
                     Ok((ch.to_string(), WordState::Variable))
                 }
-                &WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Variable)),
+                WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Variable)),
             }
         }
         StringBuildType::Digit => {
-            match curr_state {
-                &ref state @ WordState::Variable |
-                &ref state @ WordState::Number |
-                &ref state @ WordState::Decimal |
-                &ref state @ WordState::String =>
+            match *curr_state {
+                ref state @ WordState::Variable |
+                ref state @ WordState::Number |
+                ref state @ WordState::Decimal |
+                ref state @ WordState::String =>
                     Ok((curr_str + ch.to_string().as_str(), state.clone())),
-                &WordState::Operator => {
+                WordState::Operator => {
                     operator_array.push_front(curr_str);
                     Ok((ch.to_string(), WordState::Number))
                 }
-                &WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Number)),
+                WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Number)),
             }
         }
         StringBuildType::Operator => {
-            match curr_state {
-                &WordState::Variable => {
+            match *curr_state {
+                WordState::Variable => {
                     variable_array.push_front(AST::Variable(curr_str));
                     Ok((ch.to_string(), WordState::Operator))
                 }
-                &WordState::Number => {
+                WordState::Number => {
                     variable_array.push_front(AST::Number(curr_str.as_str().parse().unwrap()));
                     Ok((ch.to_string(), WordState::Operator))
                 }
-                &WordState::Decimal => {
+                WordState::Decimal => {
                     variable_array.push_front(AST::Decimal(curr_str.as_str().parse().unwrap()));
                     Ok((ch.to_string(), WordState::Operator))
                 }
-                &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
-                &WordState::Operator => {
+                WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
+                WordState::Operator => {
                     let new_str;
                     if is_operator((curr_str.clone() + ch.to_string().as_str()).as_str()) {
                         new_str = curr_str + ch.to_string().as_str();
@@ -88,31 +88,31 @@ fn build_string(build_type: StringBuildType,
 
                     Ok((new_str, WordState::Operator))
                 }
-                &WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Operator)),
+                WordState::None => Ok((curr_str + ch.to_string().as_str(), WordState::Operator)),
             }
         }
         StringBuildType::Quote => {
-            match curr_state {
-                &WordState::String => {
+            match *curr_state {
+                WordState::String => {
                     variable_array.push_front(AST::String(curr_str));
                     Ok((String::new(), WordState::None))
                 }
-                &WordState::Number | &WordState::Decimal | &WordState::Variable =>
+                WordState::Number | WordState::Decimal | WordState::Variable =>
                     Err(LexError::new("Cannot create a string after invalid type")),
-                &WordState::Operator => {
+                WordState::Operator => {
                     operator_array.push_front(curr_str);
                     Ok((String::new(), WordState::String))
                 }
-                &WordState::None => Ok((curr_str, WordState::String)),
+                WordState::None => Ok((curr_str, WordState::String)),
             }
         }
         StringBuildType::Dot => {
-            match curr_state {
-                &WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
-                &WordState::Number => Ok((curr_str + ch.to_string().as_str(), WordState::Decimal)),
-                &WordState::Operator | &WordState::Decimal | &WordState::Variable =>
+            match *curr_state {
+                WordState::String => Ok((curr_str + ch.to_string().as_str(), WordState::String)),
+                WordState::Number => Ok((curr_str + ch.to_string().as_str(), WordState::Decimal)),
+                WordState::Operator | WordState::Decimal | WordState::Variable =>
                     Err(LexError::new("Cannot have a dot after")),
-                &WordState::None => Err(LexError::new("Cannot start with dot")),
+                WordState::None => Err(LexError::new("Cannot start with dot")),
             }
         }
     }
@@ -142,7 +142,7 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), LexErr
     let mut curr_state = WordState::None;
     let mut curr_str = String::new();
 
-    for ch in s.to_string().chars() {
+    for ch in s.to_owned().chars() {
         if ch == ' ' || ch == '\t' {
             // ignore spaces and tabs except for inside a string
             if curr_state == WordState::String {
@@ -155,7 +155,7 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), LexErr
                            ch,
                            &mut variable_array,
                            &mut operator_array,
-                           &mut curr_state,
+                           &curr_state,
                            curr_str) {
             Ok((new_str, new_state)) => {
                 curr_str = new_str;
@@ -166,7 +166,7 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), LexErr
     }
 
     // after string is finished, add the currently built string into the result
-    if curr_str.len() > 0 {
+    if !curr_str.is_empty() {
         match curr_state {
             WordState::Variable => variable_array.push_front(AST::Variable(curr_str)),
             WordState::Number =>
@@ -179,7 +179,7 @@ pub fn parse_string(s: &str) -> Result<(VecDeque<AST>, VecDeque<String>), LexErr
         }
     }
 
-    return Ok((variable_array, operator_array));
+    Ok((variable_array, operator_array))
 }
 
 #[test]
@@ -187,9 +187,9 @@ fn test_no_paren() {
     let s = "a+2-b+3";
     match parse_string(s) {
         Ok((variables, operators)) => {
-            let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_string()),
+            let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
                                                       AST::Number(2),
-                                                      AST::Variable("b".to_string()),
+                                                      AST::Variable("b".to_owned()),
                                                       AST::Number(3)]
                                                      .into_iter()
                                                      .rev()
@@ -199,7 +199,7 @@ fn test_no_paren() {
             let operator_result: VecDeque<String> = vec!["+", "-", "+"]
                                                         .into_iter()
                                                         .rev()
-                                                        .map(|s| s.to_string())
+                                                        .map(|s| s.to_owned())
                                                         .collect();
             assert_eq!(operators, operator_result);
         }
@@ -212,9 +212,9 @@ fn test_paren() {
     let s = "(a+(2-b)+(3*5))";
     match parse_string(s) {
         Ok((variables, operators)) => {
-            let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_string()),
+            let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
                                                       AST::Number(2),
-                                                      AST::Variable("b".to_string()),
+                                                      AST::Variable("b".to_owned()),
                                                       AST::Number(3),
                                                       AST::Number(5)]
                                                      .into_iter()
@@ -226,7 +226,7 @@ fn test_paren() {
                                                          ")", ")"]
                                                         .into_iter()
                                                         .rev()
-                                                        .map(|s| s.to_string())
+                                                        .map(|s| s.to_owned())
                                                         .collect();
             assert_eq!(operators, operator_result);
         }
@@ -239,9 +239,9 @@ fn test_equals() {
     let s = "(a==(2-b)+(3!=5))";
     match parse_string(s) {
         Ok((variables, operators)) => {
-            let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_string()),
+            let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
                                                       AST::Number(2),
-                                                      AST::Variable("b".to_string()),
+                                                      AST::Variable("b".to_owned()),
                                                       AST::Number(3),
                                                       AST::Number(5)]
                                                      .into_iter()
@@ -253,7 +253,7 @@ fn test_equals() {
                                                          ")", ")"]
                                                         .into_iter()
                                                         .rev()
-                                                        .map(|s| s.to_string())
+                                                        .map(|s| s.to_owned())
                                                         .collect();
             assert_eq!(operators, operator_result);
         }
@@ -266,9 +266,9 @@ fn test_spaces() {
     let s = "( a + 2 - \t b \t^ 2 ) == 5";
     match parse_string(s) {
         Ok((variables, operators)) => {
-            let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_string()),
+            let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
                                                       AST::Number(2),
-                                                      AST::Variable("b".to_string()),
+                                                      AST::Variable("b".to_owned()),
                                                       AST::Number(2),
                                                       AST::Number(5)]
                                                      .into_iter()
@@ -279,7 +279,7 @@ fn test_spaces() {
             let operator_result: VecDeque<String> = vec!["(", "+", "-", "^", ")", "=="]
                                                         .into_iter()
                                                         .rev()
-                                                        .map(|s| s.to_string())
+                                                        .map(|s| s.to_owned())
                                                         .collect();
             assert_eq!(operators, operator_result);
         }
@@ -292,9 +292,8 @@ fn test_strings() {
     let s = "( \"Hello world1234 + \" + \"bye123\" )";
     match parse_string(s) {
         Ok((variables, operators)) => {
-            let variable_result: VecDeque<AST> = vec![AST::String("Hello world1234 + "
-                                                                      .to_string()),
-                                                      AST::String("bye123".to_string())]
+            let variable_result: VecDeque<AST> = vec![AST::String("Hello world1234 + ".to_owned()),
+                                                      AST::String("bye123".to_owned())]
                                                      .into_iter()
                                                      .rev()
                                                      .collect();
@@ -303,7 +302,7 @@ fn test_strings() {
             let operator_result: VecDeque<String> = vec!["(", "+", ")"]
                                                         .into_iter()
                                                         .rev()
-                                                        .map(|s| s.to_string())
+                                                        .map(|s| s.to_owned())
                                                         .collect();
             assert_eq!(operators, operator_result);
         }
@@ -313,11 +312,11 @@ fn test_strings() {
 
 #[test]
 fn test_float() {
-    let s = "1.23 - 3.14 + 123.45678";
+    let s = "1.23 - 3.12 + 123.45678";
     match parse_string(s) {
         Ok((variables, _)) => {
             let variable_result: VecDeque<AST> = vec![AST::Decimal(1.23),
-                                                      AST::Decimal(3.14),
+                                                      AST::Decimal(3.12),
                                                       AST::Decimal(123.45678)]
                                                      .into_iter()
                                                      .rev()

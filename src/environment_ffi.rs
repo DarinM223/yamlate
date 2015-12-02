@@ -7,8 +7,7 @@ use libc::c_char;
 
 #[no_mangle]
 pub extern "C" fn environment_create() -> *mut Environment {
-    let environment = unsafe { transmute(box Environment::new()) };
-    environment
+    unsafe { transmute(box Environment::new()) }
 }
 
 #[no_mangle]
@@ -109,5 +108,5 @@ pub extern "C" fn environment_get_decimal(env: *mut Environment,
 
 #[no_mangle]
 pub extern "C" fn environment_destroy(env: *mut Environment) {
-    let environment: Box<Environment> = unsafe { transmute(env) };
+    unsafe { transmute::<*mut Environment, Box<Environment>>(env) };
 }

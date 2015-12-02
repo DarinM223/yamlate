@@ -29,6 +29,9 @@ pub trait IEnvironment {
 
     /// len returns the number of scopes inside the current scope is
     fn len(&self) -> usize;
+
+    /// is_empty is true if there are no more scopes in the environment and false otherwise
+    fn is_empty(&self) -> bool;
 }
 
 pub struct Environment {
@@ -43,11 +46,10 @@ impl Environment {
 
 impl IEnvironment for Environment {
     fn get(&self, var: &str) -> Option<&AST> {
-        let key = var.to_string();
+        let key = var.to_owned();
         for i in (0..self.stack.len()).rev() {
-            match self.stack[i].get(&key) {
-                val @ Some(_) => return val,
-                _ => {}
+            if let Some(val) = self.stack[i].get(&key) {
+                return Some(val);
             }
         }
 
@@ -55,7 +57,7 @@ impl IEnvironment for Environment {
     }
 
     fn assign(&mut self, var: &str, value: AST) {
-        let key = var.to_string();
+        let key = var.to_owned();
         for i in (0..self.stack.len()).rev() {
             if self.stack[i].contains_key(&key) {
                 *self.stack[i].get_mut(&key).unwrap() = value;
@@ -67,7 +69,7 @@ impl IEnvironment for Environment {
     fn set(&mut self, var: &str, value: AST) {
         let n = self.stack.len();
         if n > 0 {
-            self.stack[n - 1].insert(var.to_string(), value);
+            self.stack[n - 1].insert(var.to_owned(), value);
         }
     }
 
@@ -81,6 +83,10 @@ impl IEnvironment for Environment {
 
     fn len(&self) -> usize {
         self.stack.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.stack.len() == 0
     }
 }
 

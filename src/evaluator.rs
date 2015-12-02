@@ -198,10 +198,10 @@ fn test_variable_ast() {
 
     let mut evaluator = Evaluator::new(&mut env);
 
-    let ast = AST::Times(box AST::Variable("a".to_string()),
-                         box AST::Plus(box AST::Minus(box AST::Variable("b".to_string()),
-                                                      box AST::Variable("c".to_string())),
-                                       box AST::Variable("d".to_string())));
+    let ast = AST::Times(box AST::Variable("a".to_owned()),
+                         box AST::Plus(box AST::Minus(box AST::Variable("b".to_owned()),
+                                                      box AST::Variable("c".to_owned())),
+                                       box AST::Variable("d".to_owned())));
     let result = evaluator.evaluate(ast);
 
     assert_eq!(result, Ok(AST::Number(35)));
@@ -226,10 +226,10 @@ fn test_float_ast() {
 
     let mut evaluator = Evaluator::new(&mut env);
 
-    let ast = AST::Times(box AST::Variable("a".to_string()),
+    let ast = AST::Times(box AST::Variable("a".to_owned()),
                          box AST::Plus(box AST::Minus(box AST::Decimal(1.5),
-                                                      box AST::Variable("b".to_string())),
-                                       box AST::Variable("c".to_string())));
+                                                      box AST::Variable("b".to_owned())),
+                                       box AST::Variable("c".to_owned())));
     let result = evaluator.evaluate(ast);
 
     assert_eq!(result, Ok(AST::Decimal(27.5)));
@@ -256,7 +256,7 @@ fn test_declare_assign() {
 
     let mut env = Environment::new();
     let mut evaluator = Evaluator::new(&mut env);
-    let ast = AST::Declare(box AST::Variable("x".to_string()),
+    let ast = AST::Declare(box AST::Variable("x".to_owned()),
                            box AST::Times(box AST::Number(10),
                                           box AST::Plus(box AST::Number(2), box AST::Number(3))));
     let result = evaluator.evaluate(ast);
@@ -265,7 +265,7 @@ fn test_declare_assign() {
 
     evaluator.env.push();
 
-    let ast = AST::Assign(box AST::Variable("x".to_string()),
+    let ast = AST::Assign(box AST::Variable("x".to_owned()),
                           box AST::Plus(box AST::Number(1), box AST::Number(2)));
 
     let result = evaluator.evaluate(ast);
@@ -302,13 +302,13 @@ fn test_equality() {
 
     // Test string equality
 
-    let ast = AST::Equal(box AST::String("Hello".to_string()),
-                         box AST::String("Hello".to_string()));
+    let ast = AST::Equal(box AST::String("Hello".to_owned()),
+                         box AST::String("Hello".to_owned()));
     let result = evaluator.evaluate(ast);
     assert_eq!(result, Ok(AST::Number(1)));
 
-    let ast = AST::Equal(box AST::String("Hello".to_string()),
-                         box AST::String("hello".to_string()));
+    let ast = AST::Equal(box AST::String("Hello".to_owned()),
+                         box AST::String("hello".to_owned()));
     let result = evaluator.evaluate(ast);
     assert_eq!(result, Ok(AST::Number(0)));
 }

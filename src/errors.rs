@@ -8,7 +8,7 @@ pub struct LexError {
 
 impl LexError {
     pub fn new(desc: &str) -> Self {
-        LexError { desc: desc.to_string() }
+        LexError { desc: desc.to_owned() }
     }
 }
 
@@ -35,7 +35,7 @@ pub struct EvalError {
 
 impl EvalError {
     pub fn new(desc: &str) -> Self {
-        EvalError { desc: desc.to_string() }
+        EvalError { desc: desc.to_owned() }
     }
 }
 
