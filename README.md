@@ -93,10 +93,27 @@ Note: the python wrapper is pretty verbose, hopefully I can refactor it into som
 For the full example look at the python/python_example_bug.py for the python file and the examples/bug.yaml for the
 YAML file
 
+### Why Rust?
+
+* Exposes a C interface so that all languages with C FFI support (essentially all modern languages) can call into the library
+* Performance characteristics similar to C and C++
+* Safe by default (prevents not only memory problems but a whole host of other problems as well)
+* Easy testing out of the box (no confusing linking or setup problems like in C/C++)
+
+### Contributing
+
+Contributions are welcome! Make sure that all of the existing test cases pass (from cargo test) and if you are adding features
+you are adding additional test cases. Also make sure that you are not getting any warnings from clippy. If you are getting clippy warnings
+there will be a line after the warning with something like this:
+
+```
+help: for further information visit https://github.com/Manishearth/rust-clippy/wiki#<clippy_warning_here>
+```
+
 ### TODO:
 
 * Fix bugs in interpreter/FFI
-* Add Ruby wrapper
+* Add Ruby and Node.js wrapper
 * Add support for more complex language features like functions, structures
 * Be able to access other fields in the YAML file as a variable
 
