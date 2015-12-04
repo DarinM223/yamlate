@@ -110,9 +110,10 @@ there will be a line after the warning with something like this:
 help: for further information visit https://github.com/Manishearth/rust-clippy/wiki#<clippy_warning_here>
 ```
 
+You should also make sure your code is formatted with rustfmt. 
+
 ### TODO:
 
-* Fix bugs in interpreter/FFI
 * Add Ruby and Node.js wrapper
 * Add support for more complex language features like functions, structures
 * Be able to access other fields in the YAML file as a variable

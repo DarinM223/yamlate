@@ -1,6 +1,7 @@
 #![feature(convert)]
 #![feature(box_patterns)]
 #![feature(box_syntax)]
+#![feature(custom_attribute)]
 
 #![feature(plugin)]
 #![plugin(clippy)]

@@ -14,7 +14,10 @@ pub enum YamlType {
 }
 
 // same as apply_keywords but only works on nested keywords in while statements
-fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &mut IEnvironment) -> YamlType {
+fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
+                               prop_str: &str,
+                               env: &mut IEnvironment)
+                               -> YamlType {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
             if let "do" = keyword.as_str() {
@@ -43,7 +46,10 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &m
 
 // same as apply_keywords but only works on nested keywords in if statements
 // like do or else
-fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>, prop_str: &str, env: &mut IEnvironment) -> YamlType {
+fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
+                            prop_str: &str,
+                            env: &mut IEnvironment)
+                            -> YamlType {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
             let result = evaluate_helper(&Yaml::String(prop_str.to_owned()), env);
@@ -101,8 +107,12 @@ fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlTyp
                     } else if let Yaml::Hash(ref h) = *val {
                         // applies logic based on the type of keyword
                         match s {
-                            "if" => return apply_nested_if_keywords(h, prop_str.clone().as_str(), env),
-                            "while" => return apply_nested_while_keywords(h, prop_str.clone().as_str(), env),
+                            "if" =>
+                                return apply_nested_if_keywords(h, prop_str.clone().as_str(), env),
+                            "while" =>
+                                return apply_nested_while_keywords(h,
+                                                                   prop_str.clone().as_str(),
+                                                                   env),
                             _ => {}
                         }
                     }
@@ -185,13 +195,14 @@ pub fn evaluate(yaml: &Yaml, env: &mut IEnvironment) -> Yaml {
 }
 
 #[test]
+#[rustfmt_skip]
 fn test_yaml_eval() {
-    // Test if evaluating "foo" returns 15
+// Test if evaluating "foo" returns 15
 
     let s = "
-    foo: 
+    foo:
       - '~> a := 2'
-      - if: 
+      - if:
         - '~> a == 2'
         - do:
           - '~> a = 3'
@@ -208,19 +219,20 @@ fn test_yaml_eval() {
 }
 
 #[test]
+#[rustfmt_skip]
 fn test_yaml_else() {
-    // Test if evaluating "foo" returns 20
+// Test if evaluating "foo" returns 20
 
     let s = "
-    foo: 
+    foo:
       - '~> a := 2'
-      - if: 
+      - if:
         - '~> a == 3'
         - do:
             - '~> a = 3'
           else:
             - '~> a = 4'
-      - return: '~> a * (2 + 3)' 
+      - return: '~> a * (2 + 3)'
     ";
 
     let mut env = Environment::new();
@@ -233,14 +245,15 @@ fn test_yaml_else() {
 }
 
 #[test]
+#[rustfmt_skip]
 fn test_return() {
-    // Test that return doesn't execute statements after it
+// Test that return doesn't execute statements after it
 
     let s = "
-    foo: 
+    foo:
       - return: '~> 2 * (2 + 3)'
       - '~> a := 2'
-      - if: 
+      - if:
         - '~> a == 2'
         - do:
           - '~> a = 3'
@@ -258,13 +271,14 @@ fn test_return() {
 }
 
 #[test]
+#[rustfmt_skip]
 fn test_return_last_val() {
-    // Test that the last value is returned as value instead of return
+// Test that the last value is returned as value instead of return
 
     let s = "
-    foo: 
+    foo:
       - '~> a := 2'
-      - if: 
+      - if:
         - '~> a == 2'
         - do:
           - '~> a = 3'
@@ -281,13 +295,14 @@ fn test_return_last_val() {
 }
 
 #[test]
+#[rustfmt_skip]
 fn test_local_variable() {
-    // Test that local variable is destroyed after if
+// Test that local variable is destroyed after if
 
     let s = "
-    foo: 
+    foo:
       - '~> a := 2'
-      - if: 
+      - if:
         - '~> a == 2'
         - do:
           - '~> c := 2'
@@ -307,6 +322,7 @@ fn test_local_variable() {
 }
 
 #[test]
+#[rustfmt_skip]
 fn test_while_loop() {
     let s = "
     foo:
