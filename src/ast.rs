@@ -8,6 +8,7 @@ pub enum AST {
     Divide(Box<AST>, Box<AST>),
     Modulo(Box<AST>, Box<AST>),
     Exponent(Box<AST>, Box<AST>),
+    FunctionCall(Box<AST>, Vec<Box<AST>>),
 
     And(Box<AST>, Box<AST>),
     Or(Box<AST>, Box<AST>),
@@ -15,9 +16,13 @@ pub enum AST {
     Equal(Box<AST>, Box<AST>),
     NotEqual(Box<AST>, Box<AST>),
 
+    List(Vec<Box<AST>>),
+
     Variable(String),
     Number(i32),
     Decimal(f64),
     String(String),
+    Function(Vec<Box<AST>>),
     None,
 }
+

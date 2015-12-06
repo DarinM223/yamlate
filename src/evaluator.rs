@@ -1,158 +1,38 @@
-extern crate num;
-
 use ast::AST;
 use environment::{IEnvironment, Environment};
-use helpers::ast_to_operator;
-use self::num::traits::Num;
 use errors::EvalError;
+use helpers::ast_to_operator;
+use appliers::{Applier, VariableApplier, EqualityApplier, ArithmeticApplier,
+                        BooleanApplier, applier_from_ast};
 
 pub struct Evaluator<'a> {
-    env: &'a mut IEnvironment,
+    pub env: &'a mut IEnvironment,
 }
 
-type ASTResult = Result<AST, EvalError>;
+pub type ASTResult = Result<AST, EvalError>;
 
 impl<'a> Evaluator<'a> {
     pub fn new(env: &'a mut IEnvironment) -> Self {
         Evaluator { env: env }
     }
 
-    fn evaluate_arithmetic(&mut self, operator: &str, child1: AST, child2: AST) -> ASTResult {
-        let result1 = self.evaluate(child1);
-        let result2 = self.evaluate(child2);
-
-        match result1 {
-            Ok(AST::Number(val)) => {
-                let param1: i32 = val;
-
-                match result2 {
-                    Ok(AST::Decimal(param2)) =>
-                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1 as f64, param2))),
-                    Ok(AST::Number(param2)) =>
-                        Ok(AST::Number(apply_arithmetic_operator(operator, param1, param2))),
-                    _ => Err(EvalError::new("Right hand result is not a numeric value")),
-                }
-            }
-            Ok(AST::Decimal(val)) => {
-                let param1: f64 = val;
-
-                match result2 {
-                    Ok(AST::Number(param2)) =>
-                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2 as f64))),
-                    Ok(AST::Decimal(param2)) =>
-                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2))),
-                    _ => Err(EvalError::new("Right hand result is not a numeric value")),
-                }
-            }
-            _ => Err(EvalError::new("Left hand result is not a numeric value")),
-        }
-    }
-
-    fn evaluate_set_variable(&mut self, operator: &str, child1: AST, child2: AST) -> ASTResult {
-        let result = self.evaluate(child2).unwrap_or(AST::None);
-        if result == AST::None {
-            return Ok(result);
-        }
-
-        if let AST::Variable(name) = child1 {
-            if operator == ":=" {
-                self.env.set(name.as_str(), result.clone());
-            } else if operator == "=" {
-                self.env.assign(name.as_str(), result.clone());
-            } else {
-                return Err(EvalError::new("Variable setting operator not implemented"));
-            }
-
-            Ok(result)
-        } else {
-            Err(EvalError::new("Left hand result must be a variable"))
-        }
-    }
-
-    fn evaluate_equality(&mut self, operator: &str, child1: AST, child2: AST) -> ASTResult {
-        let result1 = self.evaluate(child1).unwrap_or(AST::None);
-        let result2 = self.evaluate(child2).unwrap_or(AST::None);
-
-        match operator {
-            "==" => {
-                if result1.eq(&result2) {
-                    Ok(AST::Number(1))
-                } else {
-                    Ok(AST::Number(0))
-                }
-            }
-            "!=" => {
-                if !result1.eq(&result2) {
-                    Ok(AST::Number(1))
-                } else {
-                    Ok(AST::Number(0))
-                }
-            }
-            _ => Err(EvalError::new("Equality operator not implemented")),
-        }
-    }
-
-    fn evaluate_boolean(&mut self, operator: &str, child1: AST, child2: AST) -> ASTResult {
-        if let AST::Number(val1) = self.evaluate(child1).unwrap_or(AST::None) {
-            if val1 == 0 && operator == "&&" || val1 > 0 && operator == "||" {
-                return Ok(AST::Number(val1));
-            }
-
-            if let AST::Number(val2) = self.evaluate(child2).unwrap_or(AST::None) {
-                Ok(AST::Number(val2))
-            } else {
-                Err(EvalError::new("Right hand result must be a number"))
-            }
-        } else {
-            Err(EvalError::new("Left hand result must be a number"))
-        }
-    }
-
     /// evaluate evaluates the given AST and returns an AST 
     /// of the result 
     pub fn evaluate(&mut self, ast: AST) -> ASTResult {
         let op = ast_to_operator(&ast);
-        match ast {
-            AST::Variable(name) => match self.env.get(name.as_str()) {
-                Some(val) => Ok(val.clone()),
-                None => Err(EvalError::new("Variable is not in environment")),
-            },
 
-            ast @ AST::Number(_) | ast @ AST::String(_) | ast @ AST::Decimal(_) => Ok(ast),
+        let result = applier_from_ast(ast);
 
-            AST::Assign(box child1, box child2) |
-            AST::Declare(box child1, box child2) =>
-                self.evaluate_set_variable(op.as_str(), child1, child2),
-
-            AST::Equal(box child1, box child2) |
-            AST::NotEqual(box child1, box child2) =>
-                self.evaluate_equality(op.as_str(), child1, child2),
-
-            AST::And(box child1, box child2) |
-            AST::Or(box child1, box child2) => self.evaluate_boolean(op.as_str(), child1, child2),
-
-            AST::Plus(box child1, box child2) |
-            AST::Minus(box child1, box child2) |
-            AST::Times(box child1, box child2) |
-            AST::Divide(box child1, box child2) |
-            AST::Modulo(box child1, box child2) =>
-                self.evaluate_arithmetic(op.as_str(), child1, child2),
-
-            _ => Err(EvalError::new("Operation is not implemented yet")),
+        if let Ok(mut applier) = result {
+            applier.evaluate(self, op.as_str())
+        } else if let Err(e) = result {
+            Err(e)
+        } else {
+            Err(EvalError::new("Error"))
         }
     }
 }
 
-fn apply_arithmetic_operator<T: Num>(operator: &str, a: T, b: T) -> T {
-    match operator {
-        "+" => a + b,
-        "-" => a - b,
-        "*" => a * b,
-        "/" => a / b,
-        "%" => a % b,
-        _ => a + b, 
-    }
-}
 
 #[test]
 fn test_arith_ast() {

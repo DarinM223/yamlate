@@ -18,6 +18,7 @@ mod ast;
 mod parser;
 mod lexer;
 pub mod environment;
+mod appliers;
 mod evaluator;
 pub mod yaml;
 mod ffi_types;
