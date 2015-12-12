@@ -5,7 +5,7 @@ use environment::{IEnvironment, Environment};
 use ast::AST;
 use evaluator::Evaluator;
 use parser::Parser;
-use lexer;
+use lexer::Lexer;
 
 #[derive(Debug, PartialEq)]
 pub enum YamlType {
@@ -141,8 +141,11 @@ fn evaluate_helper(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
                 let mut evaluator = Evaluator::new(env);
                 let mut parser = Parser::new();
 
-                let (mut var_deque, mut op_deque) = lexer::parse_string(split_vec[1]).unwrap();
-                let ast = parser.parse_to_ast(&mut var_deque, &mut op_deque).unwrap_or(AST::None);
+                let mut lexer = Lexer::new();
+                lexer.parse_string(split_vec[1]);
+                let ast = parser.parse_to_ast(&mut lexer.state.variables,
+                                              &mut lexer.state.operators)
+                                .unwrap_or(AST::None);
                 let result = evaluator.evaluate(ast).unwrap_or(AST::None);
 
                 YamlType::Value(match result {

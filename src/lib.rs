@@ -16,6 +16,7 @@ mod errors;
 mod helpers;
 mod ast;
 mod parser;
+mod token_builder;
 mod lexer;
 pub mod environment;
 mod appliers;
