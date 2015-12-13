@@ -198,6 +198,7 @@ pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Yaml {
 }
 
 #[test]
+#[allow(unused_attributes)]
 #[rustfmt_skip]
 fn test_yaml_eval() {
 // Test if evaluating "foo" returns 15
@@ -222,6 +223,7 @@ fn test_yaml_eval() {
 }
 
 #[test]
+#[allow(unused_attributes)]
 #[rustfmt_skip]
 fn test_yaml_else() {
 // Test if evaluating "foo" returns 20
@@ -248,6 +250,7 @@ fn test_yaml_else() {
 }
 
 #[test]
+#[allow(unused_attributes)]
 #[rustfmt_skip]
 fn test_return() {
 // Test that return doesn't execute statements after it
@@ -274,6 +277,7 @@ fn test_return() {
 }
 
 #[test]
+#[allow(unused_attributes)]
 #[rustfmt_skip]
 fn test_return_last_val() {
 // Test that the last value is returned as value instead of return
@@ -298,6 +302,7 @@ fn test_return_last_val() {
 }
 
 #[test]
+#[allow(unused_attributes)]
 #[rustfmt_skip]
 fn test_local_variable() {
 // Test that local variable is destroyed after if
@@ -325,6 +330,7 @@ fn test_local_variable() {
 }
 
 #[test]
+#[allow(unused_attributes)]
 #[rustfmt_skip]
 fn test_while_loop() {
     let s = "

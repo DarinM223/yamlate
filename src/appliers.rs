@@ -33,7 +33,7 @@ impl ValueApplier {
 }
 
 impl Applier for ValueApplier {
-    fn evaluate(&mut self, evaluator: &mut Evaluator, operator: &str) -> ASTResult {
+    fn evaluate(&mut self, _evaluator: &mut Evaluator, _operator: &str) -> ASTResult {
         Ok(mem::replace(&mut self.value, AST::None))
     }
 }
@@ -49,7 +49,7 @@ impl VariableApplier {
 }
 
 impl Applier for VariableApplier {
-    fn evaluate(&mut self, evaluator: &mut Evaluator, operator: &str) -> ASTResult {
+    fn evaluate(&mut self, evaluator: &mut Evaluator, _operator: &str) -> ASTResult {
         if let Some(val) = evaluator.env.get(self.name.as_str()) {
             Ok(val.clone())
         } else {

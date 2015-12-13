@@ -2,8 +2,7 @@ use ast::AST;
 use environment::{Environment, ASTEnvironment};
 use errors::EvalError;
 use helpers::ast_to_operator;
-use appliers::{Applier, VariableApplier, EqualityApplier, ArithmeticApplier,
-                        BooleanApplier, applier_from_ast};
+use appliers::applier_from_ast;
 
 pub struct Evaluator<'a> {
     pub env: &'a mut Environment,

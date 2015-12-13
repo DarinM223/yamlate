@@ -97,7 +97,7 @@ impl TokenBuilder for OperatorBuilder {
 
             WordState::Operator => {
                 state.curr_chars.push(ch);
-                let op_str = state.curr_chars.iter().map(|c| *c).collect::<String>();
+                let op_str = state.curr_chars.iter().cloned().collect::<String>();
 
                 if !is_operator(op_str.as_str()) {
                     state.curr_chars.pop();
@@ -118,7 +118,7 @@ impl TokenBuilder for OperatorBuilder {
 }
 
 impl TokenBuilder for QuoteBuilder {
-    fn append(&self, ch: char, state: &mut LexerState) -> Option<LexError> {
+    fn append(&self, _ch: char, state: &mut LexerState) -> Option<LexError> {
         match state.curr_state {
             WordState::String => {
                 let curr_str = state.emit_string();

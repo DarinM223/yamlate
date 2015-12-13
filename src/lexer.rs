@@ -1,7 +1,6 @@
 use ast::AST;
 use std::collections::VecDeque;
 use errors::LexError;
-use std::mem;
 use token_builder::builder_from_ch;
 
 #[derive(Clone, PartialEq)]
@@ -34,8 +33,8 @@ impl LexerState {
     /// emit_string clears all of the current characters in the state
     /// and returns the string representation of the character array
     pub fn emit_string(&mut self) -> String {
-        let curr_str = self.curr_chars.iter().map(|c| *c).collect::<String>();
-        self.curr_chars.retain(|&c| false);
+        let curr_str = self.curr_chars.iter().cloned().collect::<String>();
+        self.curr_chars.retain(|_| false);
 
         curr_str
     }
