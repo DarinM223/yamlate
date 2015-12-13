@@ -1,17 +1,17 @@
 use ast::AST;
-use environment::{IEnvironment, Environment};
+use environment::{Environment, ASTEnvironment};
 use std::mem::transmute;
 use std::ffi::{CStr, CString};
 use ffi_types::{FFIReturnValue, Error};
 use libc::c_char;
 
 #[no_mangle]
-pub extern "C" fn environment_create() -> *mut Environment {
-    unsafe { transmute(box Environment::new()) }
+pub extern "C" fn environment_create() -> *mut ASTEnvironment {
+    unsafe { transmute(box ASTEnvironment::new()) }
 }
 
 #[no_mangle]
-pub extern "C" fn environment_set_integer(env: *mut Environment, name: *const c_char, value: i32) {
+pub extern "C" fn environment_set_integer(env: *mut ASTEnvironment, name: *const c_char, value: i32) {
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
@@ -19,7 +19,7 @@ pub extern "C" fn environment_set_integer(env: *mut Environment, name: *const c_
 }
 
 #[no_mangle]
-pub extern "C" fn environment_set_string(env: *mut Environment,
+pub extern "C" fn environment_set_string(env: *mut ASTEnvironment,
                                          name: *const c_char,
                                          value: *const c_char) {
     let environment = unsafe { &mut *env };
@@ -30,7 +30,7 @@ pub extern "C" fn environment_set_string(env: *mut Environment,
 }
 
 #[no_mangle]
-pub extern "C" fn environment_set_decimal(env: *mut Environment, name: *const c_char, value: f64) {
+pub extern "C" fn environment_set_decimal(env: *mut ASTEnvironment, name: *const c_char, value: f64) {
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
@@ -38,7 +38,7 @@ pub extern "C" fn environment_set_decimal(env: *mut Environment, name: *const c_
 }
 
 #[no_mangle]
-pub extern "C" fn environment_get_integer(env: *mut Environment,
+pub extern "C" fn environment_get_integer(env: *mut ASTEnvironment,
                                           name: *const c_char)
                                           -> FFIReturnValue<i32> {
     let environment = unsafe { &mut *env };
@@ -61,7 +61,7 @@ pub extern "C" fn environment_get_integer(env: *mut Environment,
 }
 
 #[no_mangle]
-pub extern "C" fn environment_get_string(env: *mut Environment,
+pub extern "C" fn environment_get_string(env: *mut ASTEnvironment,
                                          name: *const c_char)
                                          -> FFIReturnValue<*const c_char> {
     let environment = unsafe { &mut *env };
@@ -84,7 +84,7 @@ pub extern "C" fn environment_get_string(env: *mut Environment,
 }
 
 #[no_mangle]
-pub extern "C" fn environment_get_decimal(env: *mut Environment,
+pub extern "C" fn environment_get_decimal(env: *mut ASTEnvironment,
                                           name: *const c_char)
                                           -> FFIReturnValue<f64> {
     let environment = unsafe { &mut *env };
@@ -107,6 +107,6 @@ pub extern "C" fn environment_get_decimal(env: *mut Environment,
 }
 
 #[no_mangle]
-pub extern "C" fn environment_destroy(env: *mut Environment) {
-    unsafe { transmute::<*mut Environment, Box<Environment>>(env) };
+pub extern "C" fn environment_destroy(env: *mut ASTEnvironment) {
+    unsafe { transmute::<*mut ASTEnvironment, Box<ASTEnvironment>>(env) };
 }

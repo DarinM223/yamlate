@@ -1,7 +1,7 @@
 use yaml_rust::yaml::Yaml;
 use std::collections::BTreeMap;
 use yaml_rust::YamlLoader;
-use environment::{IEnvironment, Environment};
+use environment::{Environment, ASTEnvironment};
 use ast::AST;
 use evaluator::Evaluator;
 use parser::Parser;
@@ -16,7 +16,7 @@ pub enum YamlType {
 // same as apply_keywords but only works on nested keywords in while statements
 fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
                                prop_str: &str,
-                               env: &mut IEnvironment)
+                               env: &mut Environment)
                                -> YamlType {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
@@ -48,7 +48,7 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
 // like do or else
 fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
                             prop_str: &str,
-                            env: &mut IEnvironment)
+                            env: &mut Environment)
                             -> YamlType {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
@@ -84,7 +84,7 @@ fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
 }
 
 // applies the effects of keywords in a YAML hash
-fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlType {
+fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut Environment) -> YamlType {
     match s {
         "while" | "if" => {
             if let Yaml::Array(ref arr) = *v {
@@ -133,7 +133,7 @@ fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut IEnvironment) -> YamlTyp
 }
 
 // evaluates the result of a fragment of YAML
-fn evaluate_helper(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
+fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> YamlType {
     match *yaml {
         Yaml::String(ref s) => {
             if s.as_str().contains("~>") {
@@ -188,7 +188,7 @@ fn evaluate_helper(yaml: &Yaml, env: &mut IEnvironment) -> YamlType {
 }
 
 // Main function for evaluating YAML
-pub fn evaluate(yaml: &Yaml, env: &mut IEnvironment) -> Yaml {
+pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Yaml {
     let result = evaluate_helper(yaml, env);
 
     match result {
@@ -212,7 +212,7 @@ fn test_yaml_eval() {
       - return: '~> a * (2 + 3)'
     ";
 
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("a", AST::Number(1));
     env.set("b", AST::Number(2));
 
@@ -238,7 +238,7 @@ fn test_yaml_else() {
       - return: '~> a * (2 + 3)'
     ";
 
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("a", AST::Number(1));
     env.set("b", AST::Number(2));
 
@@ -262,7 +262,7 @@ fn test_return() {
           - '~> a = 3'
     ";
 
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("a", AST::Number(1));
     env.set("b", AST::Number(2));
 
@@ -288,7 +288,7 @@ fn test_return_last_val() {
       - '~> 2 * (2 + 3)'
     ";
 
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("a", AST::Number(1));
     env.set("b", AST::Number(2));
 
@@ -313,7 +313,7 @@ fn test_local_variable() {
       - '~> a * (2 + 3)'
     ";
 
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("a", AST::Number(1));
     env.set("b", AST::Number(2));
 
@@ -337,7 +337,7 @@ fn test_while_loop() {
       - '~> a'
     ";
 
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
 
     let docs = YamlLoader::load_from_str(s).unwrap();
 

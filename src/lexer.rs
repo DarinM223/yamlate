@@ -14,15 +14,6 @@ pub enum WordState {
     None,
 }
 
-#[derive(Clone, PartialEq)]
-enum StringBuildType {
-    Letter,
-    Digit,
-    Operator,
-    Quote,
-    Dot,
-}
-
 pub struct LexerState {
     pub variables: VecDeque<AST>,
     pub operators: VecDeque<String>,

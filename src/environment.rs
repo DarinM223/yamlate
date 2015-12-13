@@ -1,7 +1,7 @@
 use ast::AST;
 use std::collections::HashMap;
 
-pub trait IEnvironment {
+pub trait Environment {
     /// gets a value from the environment
     /// returns the value of the variable in the most
     /// current scope possible or None if the variable 
@@ -34,17 +34,17 @@ pub trait IEnvironment {
     fn is_empty(&self) -> bool;
 }
 
-pub struct Environment {
+pub struct ASTEnvironment {
     stack: Vec<HashMap<String, AST>>,
 }
 
-impl Environment {
+impl ASTEnvironment {
     pub fn new() -> Self {
-        Environment { stack: vec![HashMap::new()] }
+        ASTEnvironment { stack: vec![HashMap::new()] }
     }
 }
 
-impl IEnvironment for Environment {
+impl Environment for ASTEnvironment {
     fn get(&self, var: &str) -> Option<&AST> {
         let key = var.to_owned();
         for i in (0..self.stack.len()).rev() {
@@ -92,13 +92,13 @@ impl IEnvironment for Environment {
 
 #[test]
 fn test_bad_value_empty_stack() {
-    let env = Environment::new();
+    let env = ASTEnvironment::new();
     assert_eq!(env.get("Hello"), None);
 }
 
 #[test]
 fn test_bad_value_nonempty_stack() {
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("hello", AST::Number(2));
     env.push();
     env.set("world", AST::Number(3));
@@ -107,7 +107,7 @@ fn test_bad_value_nonempty_stack() {
 
 #[test]
 fn test_good_value_one_stack() {
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("hello", AST::Number(2));
     env.set("world", AST::Number(3));
     assert_eq!(env.get("world"), Some(&AST::Number(3)));
@@ -115,14 +115,14 @@ fn test_good_value_one_stack() {
 
 #[test]
 fn test_push_adds_environment() {
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.push();
     assert_eq!(env.len(), 2);
 }
 
 #[test]
 fn test_pop_removes_environment() {
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.push();
     env.pop();
     assert_eq!(env.len(), 1);
@@ -130,7 +130,7 @@ fn test_pop_removes_environment() {
 
 #[test]
 fn test_good_value_multiple_stacks() {
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("hello", AST::Number(2));
     env.push();
     env.set("world", AST::Number(3));
@@ -139,7 +139,7 @@ fn test_good_value_multiple_stacks() {
 
 #[test]
 fn test_override_value() {
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("hello", AST::Number(2));
     env.push();
     env.set("hello", AST::Number(3));
@@ -152,7 +152,7 @@ fn test_override_value() {
 
 #[test]
 fn test_assign_sets_value_in_other_stack() {
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("hello", AST::Number(2));
     env.push();
     env.assign("hello", AST::Number(3));

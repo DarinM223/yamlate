@@ -1,18 +1,18 @@
 use ast::AST;
-use environment::{IEnvironment, Environment};
+use environment::{Environment, ASTEnvironment};
 use errors::EvalError;
 use helpers::ast_to_operator;
 use appliers::{Applier, VariableApplier, EqualityApplier, ArithmeticApplier,
                         BooleanApplier, applier_from_ast};
 
 pub struct Evaluator<'a> {
-    pub env: &'a mut IEnvironment,
+    pub env: &'a mut Environment,
 }
 
 pub type ASTResult = Result<AST, EvalError>;
 
 impl<'a> Evaluator<'a> {
-    pub fn new(env: &'a mut IEnvironment) -> Self {
+    pub fn new(env: &'a mut Environment) -> Self {
         Evaluator { env: env }
     }
 
@@ -46,7 +46,7 @@ fn test_arith_ast() {
     //   3     2
     // is "35"
 
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     let mut evaluator = Evaluator::new(&mut env);
 
     let ast = AST::Times(box AST::Number(5),
@@ -70,7 +70,7 @@ fn test_variable_ast() {
     //   b     c
     // is "35" when a is 5, b is 3, c is 2, and d is 6
 
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("a", AST::Number(5));
     env.set("b", AST::Number(3));
     env.set("c", AST::Number(2));
@@ -99,7 +99,7 @@ fn test_float_ast() {
     //   1.5   b
     // is "27.5" when a is 5, b is 2, and c is 6
 
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     env.set("a", AST::Number(5));
     env.set("b", AST::Number(2));
     env.set("c", AST::Number(6));
@@ -134,7 +134,7 @@ fn test_declare_assign() {
     //    1   2
     // results in x being set to 3 in the original scope
 
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     let mut evaluator = Evaluator::new(&mut env);
     let ast = AST::Declare(box AST::Variable("x".to_owned()),
                            box AST::Times(box AST::Number(10),
@@ -157,7 +157,7 @@ fn test_declare_assign() {
 
 #[test]
 fn test_equality() {
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     let mut evaluator = Evaluator::new(&mut env);
 
     // Test number equality
@@ -196,7 +196,7 @@ fn test_equality() {
 
 #[test]
 fn test_boolean_operators() {
-    let mut env = Environment::new();
+    let mut env = ASTEnvironment::new();
     let mut evaluator = Evaluator::new(&mut env);
 
     // Test and operator

@@ -18,6 +18,7 @@ pub fn apply_arithmetic_operator<T: Num>(operator: &str, a: T, b: T) -> T {
 }
 
 pub trait Applier {
+    /// evaluates an expression with a given operator given the evaluator
     fn evaluate(&mut self, evaluator: &mut Evaluator, operator: &str) -> ASTResult;
 }
 
