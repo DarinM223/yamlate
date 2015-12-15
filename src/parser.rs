@@ -103,103 +103,110 @@ impl Parser {
     }
 }
 
-#[test]
-fn test_collapse_stacks() {
-    // test ast generation for `1 * (2 + 3)`
-    // expected result:
-    //      *
-    //    /   \
-    //   1     +
-    //        / \
-    //       2   3
+#[cfg(test)]
+mod tests {
+    use ast::AST;
+    use std::collections::VecDeque;
+    use super::*;
 
-    let mut parser = Parser::new();
+    #[test]
+    fn test_collapse_stacks() {
+        // test ast generation for `1 * (2 + 3)`
+        // expected result:
+        //      *
+        //    /   \
+        //   1     +
+        //        / \
+        //       2   3
 
-    parser.var_stack.push_front(AST::Number(1));
-    parser.var_stack.push_front(AST::Number(2));
-    parser.var_stack.push_front(AST::Number(3));
+        let mut parser = Parser::new();
 
-    parser.op_stack.push_front("*".to_owned());
-    parser.op_stack.push_front("(".to_owned());
-    parser.op_stack.push_front("+".to_owned());
-    parser.op_stack.push_front(")".to_owned());
+        parser.var_stack.push_front(AST::Number(1));
+        parser.var_stack.push_front(AST::Number(2));
+        parser.var_stack.push_front(AST::Number(3));
 
-    parser.collapse_stacks(-2);
+        parser.op_stack.push_front("*".to_owned());
+        parser.op_stack.push_front("(".to_owned());
+        parser.op_stack.push_front("+".to_owned());
+        parser.op_stack.push_front(")".to_owned());
 
-    assert_eq!(parser.var_stack.len(), 1);
+        parser.collapse_stacks(-2);
 
-    let expected_val = Some(AST::Times(box AST::Number(1),
-                                       box AST::Plus(box AST::Number(2), box AST::Number(3))));
+        assert_eq!(parser.var_stack.len(), 1);
 
-    assert_eq!(parser.var_stack.pop_front(), expected_val);
-}
+        let expected_val = Some(AST::Times(box AST::Number(1),
+                                           box AST::Plus(box AST::Number(2), box AST::Number(3))));
 
-#[test]
-fn test_parse_to_ast() {
-    // test ast generation for `1 + !5 ^ (2 && 6) * 2`
-    // expected result:
-    //     +
-    //   /   \
-    //  1     *
-    //      /   \
-    //    ^       2
-    //  /   \
-    // !     &&
-    // |    /  \
-    // 5   2    6
+        assert_eq!(parser.var_stack.pop_front(), expected_val);
+    }
 
-    let mut parser = Parser::new();
+    #[test]
+    fn test_parse_to_ast() {
+        // test ast generation for `1 + !5 ^ (2 && 6) * 2`
+        // expected result:
+        //     +
+        //   /   \
+        //  1     *
+        //      /   \
+        //    ^       2
+        //  /   \
+        // !     &&
+        // |    /  \
+        // 5   2    6
 
-    let mut variables = VecDeque::new();
-    let mut operators = VecDeque::new();
+        let mut parser = Parser::new();
 
-    variables.push_front(AST::Number(1));
-    variables.push_front(AST::Number(5));
-    variables.push_front(AST::Number(2));
-    variables.push_front(AST::Number(6));
-    variables.push_front(AST::Number(2));
+        let mut variables = VecDeque::new();
+        let mut operators = VecDeque::new();
 
-    operators.push_front("+".to_owned());
-    operators.push_front("!".to_owned());
-    operators.push_front("^".to_owned());
-    operators.push_front("(".to_owned());
-    operators.push_front("&&".to_owned());
-    operators.push_front(")".to_owned());
-    operators.push_front("*".to_owned());
+        variables.push_front(AST::Number(1));
+        variables.push_front(AST::Number(5));
+        variables.push_front(AST::Number(2));
+        variables.push_front(AST::Number(6));
+        variables.push_front(AST::Number(2));
 
-    let result = parser.parse_to_ast(&mut variables, &mut operators);
+        operators.push_front("+".to_owned());
+        operators.push_front("!".to_owned());
+        operators.push_front("^".to_owned());
+        operators.push_front("(".to_owned());
+        operators.push_front("&&".to_owned());
+        operators.push_front(")".to_owned());
+        operators.push_front("*".to_owned());
 
-    let expected_val =
-        Some(AST::Plus(box AST::Number(1),
-                       box AST::Times(box AST::Exponent(box AST::Not(box AST::Number(5)),
-                                                        box AST::And(box AST::Number(2),
-                                                                     box AST::Number(6))),
-                                      box AST::Number(2))));
+        let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-    assert_eq!(result, expected_val);
-}
+        let expected_val =
+            Some(AST::Plus(box AST::Number(1),
+                           box AST::Times(box AST::Exponent(box AST::Not(box AST::Number(5)),
+                                                            box AST::And(box AST::Number(2),
+                                                                         box AST::Number(6))),
+                                          box AST::Number(2))));
 
-#[test]
-fn test_parse_to_ast_simple() {
-    // test ast generation for `1 + 2`
-    // expected result:
-    //    +
-    //   / \
-    //  1   2
+        assert_eq!(result, expected_val);
+    }
 
-    let mut parser = Parser::new();
+    #[test]
+    fn test_parse_to_ast_simple() {
+        // test ast generation for `1 + 2`
+        // expected result:
+        //    +
+        //   / \
+        //  1   2
 
-    let mut variables = VecDeque::new();
-    let mut operators = VecDeque::new();
+        let mut parser = Parser::new();
 
-    variables.push_front(AST::Number(1));
-    variables.push_front(AST::Number(2));
+        let mut variables = VecDeque::new();
+        let mut operators = VecDeque::new();
 
-    operators.push_front("+".to_owned());
+        variables.push_front(AST::Number(1));
+        variables.push_front(AST::Number(2));
 
-    let result = parser.parse_to_ast(&mut variables, &mut operators);
+        operators.push_front("+".to_owned());
 
-    let expected_val = Some(AST::Plus(box AST::Number(1), box AST::Number(2)));
+        let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-    assert_eq!(result, expected_val);
+        let expected_val = Some(AST::Plus(box AST::Number(1), box AST::Number(2)));
+
+        assert_eq!(result, expected_val);
+    }
 }

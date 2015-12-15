@@ -3,8 +3,8 @@
 #![feature(box_syntax)]
 #![feature(custom_attribute)]
 
-#![feature(plugin)]
-#![plugin(clippy)]
+#[cfg_attr(feature="clippy", feature(plugin))]
+#[cfg_attr(feature="clippy", plugin(clippy))]
 
 extern crate yaml_rust;
 extern crate libc;

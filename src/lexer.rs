@@ -93,134 +93,142 @@ impl Lexer {
 }
 
 
-#[test]
-fn test_no_paren() {
-    let s = "a+2-b+3";
-    let mut lexer = Lexer::new();
-    assert_eq!(lexer.parse_string(s), None);
+#[cfg(test)]
+mod tests {
+    use ast::AST;
+    use std::collections::VecDeque;
+    use super::*;
 
-    let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
-                                              AST::Number(2),
-                                              AST::Variable("b".to_owned()),
-                                              AST::Number(3)]
-                                             .into_iter()
-                                             .rev()
-                                             .collect();
-    assert_eq!(lexer.state.variables, variable_result);
+    #[test]
+    fn test_no_paren() {
+        let s = "a+2-b+3";
+        let mut lexer = Lexer::new();
+        assert_eq!(lexer.parse_string(s), None);
 
-    let operator_result: VecDeque<String> = vec!["+", "-", "+"]
-                                                .into_iter()
-                                                .rev()
-                                                .map(|s| s.to_owned())
-                                                .collect();
-    assert_eq!(lexer.state.operators, operator_result);
-}
+        let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
+                                                  AST::Number(2),
+                                                  AST::Variable("b".to_owned()),
+                                                  AST::Number(3)]
+                                                 .into_iter()
+                                                 .rev()
+                                                 .collect();
+        assert_eq!(lexer.state.variables, variable_result);
 
-#[test]
-fn test_paren() {
-    let s = "(a+(2-b)+(3*5))";
-    let mut lexer = Lexer::new();
-    assert_eq!(lexer.parse_string(s), None);
+        let operator_result: VecDeque<String> = vec!["+", "-", "+"]
+                                                    .into_iter()
+                                                    .rev()
+                                                    .map(|s| s.to_owned())
+                                                    .collect();
+        assert_eq!(lexer.state.operators, operator_result);
+    }
 
-    let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
-                                              AST::Number(2),
-                                              AST::Variable("b".to_owned()),
-                                              AST::Number(3),
-                                              AST::Number(5)]
-                                             .into_iter()
-                                             .rev()
-                                             .collect();
-    assert_eq!(lexer.state.variables, variable_result);
+    #[test]
+    fn test_paren() {
+        let s = "(a+(2-b)+(3*5))";
+        let mut lexer = Lexer::new();
+        assert_eq!(lexer.parse_string(s), None);
 
-    let operator_result: VecDeque<String> = vec!["(", "+", "(", "-", ")", "+", "(", "*", ")", ")"]
-                                                .into_iter()
-                                                .rev()
-                                                .map(|s| s.to_owned())
-                                                .collect();
-    assert_eq!(lexer.state.operators, operator_result);
-}
+        let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
+                                                  AST::Number(2),
+                                                  AST::Variable("b".to_owned()),
+                                                  AST::Number(3),
+                                                  AST::Number(5)]
+                                                 .into_iter()
+                                                 .rev()
+                                                 .collect();
+        assert_eq!(lexer.state.variables, variable_result);
 
-#[test]
-fn test_equals() {
-    let s = "(a==(2-b)+(3!=5))";
-    let mut lexer = Lexer::new();
-    assert_eq!(lexer.parse_string(s), None);
+        let operator_result: VecDeque<String> = vec!["(", "+", "(", "-", ")", "+", "(", "*", ")",
+                                                     ")"]
+                                                    .into_iter()
+                                                    .rev()
+                                                    .map(|s| s.to_owned())
+                                                    .collect();
+        assert_eq!(lexer.state.operators, operator_result);
+    }
 
-    let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
-                                              AST::Number(2),
-                                              AST::Variable("b".to_owned()),
-                                              AST::Number(3),
-                                              AST::Number(5)]
-                                             .into_iter()
-                                             .rev()
-                                             .collect();
-    assert_eq!(lexer.state.variables, variable_result);
+    #[test]
+    fn test_equals() {
+        let s = "(a==(2-b)+(3!=5))";
+        let mut lexer = Lexer::new();
+        assert_eq!(lexer.parse_string(s), None);
 
-    let operator_result: VecDeque<String> = vec!["(", "==", "(", "-", ")", "+", "(", "!=", ")",
-                                                 ")"]
-                                                .into_iter()
-                                                .rev()
-                                                .map(|s| s.to_owned())
-                                                .collect();
-    assert_eq!(lexer.state.operators, operator_result);
-}
+        let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
+                                                  AST::Number(2),
+                                                  AST::Variable("b".to_owned()),
+                                                  AST::Number(3),
+                                                  AST::Number(5)]
+                                                 .into_iter()
+                                                 .rev()
+                                                 .collect();
+        assert_eq!(lexer.state.variables, variable_result);
 
-#[test]
-fn test_spaces() {
-    let s = "( a + 2 - \t b \t^ 2 ) == 5";
-    let mut lexer = Lexer::new();
-    assert_eq!(lexer.parse_string(s), None);
+        let operator_result: VecDeque<String> = vec!["(", "==", "(", "-", ")", "+", "(", "!=",
+                                                     ")", ")"]
+                                                    .into_iter()
+                                                    .rev()
+                                                    .map(|s| s.to_owned())
+                                                    .collect();
+        assert_eq!(lexer.state.operators, operator_result);
+    }
 
-    let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
-                                              AST::Number(2),
-                                              AST::Variable("b".to_owned()),
-                                              AST::Number(2),
-                                              AST::Number(5)]
-                                             .into_iter()
-                                             .rev()
-                                             .collect();
-    assert_eq!(lexer.state.variables, variable_result);
+    #[test]
+    fn test_spaces() {
+        let s = "( a + 2 - \t b \t^ 2 ) == 5";
+        let mut lexer = Lexer::new();
+        assert_eq!(lexer.parse_string(s), None);
 
-    let operator_result: VecDeque<String> = vec!["(", "+", "-", "^", ")", "=="]
-                                                .into_iter()
-                                                .rev()
-                                                .map(|s| s.to_owned())
-                                                .collect();
-    assert_eq!(lexer.state.operators, operator_result);
-}
+        let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
+                                                  AST::Number(2),
+                                                  AST::Variable("b".to_owned()),
+                                                  AST::Number(2),
+                                                  AST::Number(5)]
+                                                 .into_iter()
+                                                 .rev()
+                                                 .collect();
+        assert_eq!(lexer.state.variables, variable_result);
 
-#[test]
-fn test_strings() {
-    let s = "( \"Hello world1234 + \" + \"bye123\" )";
-    let mut lexer = Lexer::new();
-    assert_eq!(lexer.parse_string(s), None);
+        let operator_result: VecDeque<String> = vec!["(", "+", "-", "^", ")", "=="]
+                                                    .into_iter()
+                                                    .rev()
+                                                    .map(|s| s.to_owned())
+                                                    .collect();
+        assert_eq!(lexer.state.operators, operator_result);
+    }
 
-    let variable_result: VecDeque<AST> = vec![AST::String("Hello world1234 + ".to_owned()),
-                                              AST::String("bye123".to_owned())]
-                                             .into_iter()
-                                             .rev()
-                                             .collect();
-    assert_eq!(lexer.state.variables, variable_result);
+    #[test]
+    fn test_strings() {
+        let s = "( \"Hello world1234 + \" + \"bye123\" )";
+        let mut lexer = Lexer::new();
+        assert_eq!(lexer.parse_string(s), None);
 
-    let operator_result: VecDeque<String> = vec!["(", "+", ")"]
-                                                .into_iter()
-                                                .rev()
-                                                .map(|s| s.to_owned())
-                                                .collect();
-    assert_eq!(lexer.state.operators, operator_result);
-}
+        let variable_result: VecDeque<AST> = vec![AST::String("Hello world1234 + ".to_owned()),
+                                                  AST::String("bye123".to_owned())]
+                                                 .into_iter()
+                                                 .rev()
+                                                 .collect();
+        assert_eq!(lexer.state.variables, variable_result);
 
-#[test]
-fn test_float() {
-    let s = "1.23 - 3.12 + 123.45678";
-    let mut lexer = Lexer::new();
-    assert_eq!(lexer.parse_string(s), None);
+        let operator_result: VecDeque<String> = vec!["(", "+", ")"]
+                                                    .into_iter()
+                                                    .rev()
+                                                    .map(|s| s.to_owned())
+                                                    .collect();
+        assert_eq!(lexer.state.operators, operator_result);
+    }
 
-    let variable_result: VecDeque<AST> = vec![AST::Decimal(1.23),
-                                              AST::Decimal(3.12),
-                                              AST::Decimal(123.45678)]
-                                             .into_iter()
-                                             .rev()
-                                             .collect();
-    assert_eq!(lexer.state.variables, variable_result);
+    #[test]
+    fn test_float() {
+        let s = "1.23 - 3.12 + 123.45678";
+        let mut lexer = Lexer::new();
+        assert_eq!(lexer.parse_string(s), None);
+
+        let variable_result: VecDeque<AST> = vec![AST::Decimal(1.23),
+                                                  AST::Decimal(3.12),
+                                                  AST::Decimal(123.45678)]
+                                                 .into_iter()
+                                                 .rev()
+                                                 .collect();
+        assert_eq!(lexer.state.variables, variable_result);
+    }
 }

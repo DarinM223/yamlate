@@ -90,73 +90,79 @@ impl Environment for ASTEnvironment {
     }
 }
 
-#[test]
-fn test_bad_value_empty_stack() {
-    let env = ASTEnvironment::new();
-    assert_eq!(env.get("Hello"), None);
-}
+#[cfg(test)]
+mod tests {
+    use ast::AST;
+    use super::{Environment, ASTEnvironment};
 
-#[test]
-fn test_bad_value_nonempty_stack() {
-    let mut env = ASTEnvironment::new();
-    env.set("hello", AST::Number(2));
-    env.push();
-    env.set("world", AST::Number(3));
-    assert_eq!(env.get("blah"), None);
-}
+    #[test]
+    fn test_bad_value_empty_stack() {
+        let env = ASTEnvironment::new();
+        assert_eq!(env.get("Hello"), None);
+    }
 
-#[test]
-fn test_good_value_one_stack() {
-    let mut env = ASTEnvironment::new();
-    env.set("hello", AST::Number(2));
-    env.set("world", AST::Number(3));
-    assert_eq!(env.get("world"), Some(&AST::Number(3)));
-}
+    #[test]
+    fn test_bad_value_nonempty_stack() {
+        let mut env = ASTEnvironment::new();
+        env.set("hello", AST::Number(2));
+        env.push();
+        env.set("world", AST::Number(3));
+        assert_eq!(env.get("blah"), None);
+    }
 
-#[test]
-fn test_push_adds_environment() {
-    let mut env = ASTEnvironment::new();
-    env.push();
-    assert_eq!(env.len(), 2);
-}
+    #[test]
+    fn test_good_value_one_stack() {
+        let mut env = ASTEnvironment::new();
+        env.set("hello", AST::Number(2));
+        env.set("world", AST::Number(3));
+        assert_eq!(env.get("world"), Some(&AST::Number(3)));
+    }
 
-#[test]
-fn test_pop_removes_environment() {
-    let mut env = ASTEnvironment::new();
-    env.push();
-    env.pop();
-    assert_eq!(env.len(), 1);
-}
+    #[test]
+    fn test_push_adds_environment() {
+        let mut env = ASTEnvironment::new();
+        env.push();
+        assert_eq!(env.len(), 2);
+    }
 
-#[test]
-fn test_good_value_multiple_stacks() {
-    let mut env = ASTEnvironment::new();
-    env.set("hello", AST::Number(2));
-    env.push();
-    env.set("world", AST::Number(3));
-    assert_eq!(env.get("hello"), Some(&AST::Number(2)));
-}
+    #[test]
+    fn test_pop_removes_environment() {
+        let mut env = ASTEnvironment::new();
+        env.push();
+        env.pop();
+        assert_eq!(env.len(), 1);
+    }
 
-#[test]
-fn test_override_value() {
-    let mut env = ASTEnvironment::new();
-    env.set("hello", AST::Number(2));
-    env.push();
-    env.set("hello", AST::Number(3));
+    #[test]
+    fn test_good_value_multiple_stacks() {
+        let mut env = ASTEnvironment::new();
+        env.set("hello", AST::Number(2));
+        env.push();
+        env.set("world", AST::Number(3));
+        assert_eq!(env.get("hello"), Some(&AST::Number(2)));
+    }
 
-    assert_eq!(env.get("hello"), Some(&AST::Number(3)));
+    #[test]
+    fn test_override_value() {
+        let mut env = ASTEnvironment::new();
+        env.set("hello", AST::Number(2));
+        env.push();
+        env.set("hello", AST::Number(3));
 
-    env.pop();
-    assert_eq!(env.get("hello"), Some(&AST::Number(2)));
-}
+        assert_eq!(env.get("hello"), Some(&AST::Number(3)));
 
-#[test]
-fn test_assign_sets_value_in_other_stack() {
-    let mut env = ASTEnvironment::new();
-    env.set("hello", AST::Number(2));
-    env.push();
-    env.assign("hello", AST::Number(3));
-    env.pop();
+        env.pop();
+        assert_eq!(env.get("hello"), Some(&AST::Number(2)));
+    }
 
-    assert_eq!(env.get("hello"), Some(&AST::Number(3)));
+    #[test]
+    fn test_assign_sets_value_in_other_stack() {
+        let mut env = ASTEnvironment::new();
+        env.set("hello", AST::Number(2));
+        env.push();
+        env.assign("hello", AST::Number(3));
+        env.pop();
+
+        assert_eq!(env.get("hello"), Some(&AST::Number(3)));
+    }
 }

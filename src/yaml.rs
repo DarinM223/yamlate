@@ -197,157 +197,166 @@ pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Yaml {
     }
 }
 
-#[test]
-#[allow(unused_attributes)]
-#[rustfmt_skip]
-fn test_yaml_eval() {
-// Test if evaluating "foo" returns 15
+#[cfg(test)]
+mod tests {
+    use ast::AST;
+    use yaml_rust::yaml::Yaml;
+    use yaml_rust::YamlLoader;
+    use environment::{Environment, ASTEnvironment};
+    use super::*;
 
-    let s = "
-    foo:
-      - '~> a := 2'
-      - if:
-        - '~> a == 2'
-        - do:
-          - '~> a = 3'
-      - return: '~> a * (2 + 3)'
-    ";
-
-    let mut env = ASTEnvironment::new();
-    env.set("a", AST::Number(1));
-    env.set("b", AST::Number(2));
-
-    let docs = YamlLoader::load_from_str(s).unwrap();
-
-    assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(15));
-}
-
-#[test]
-#[allow(unused_attributes)]
-#[rustfmt_skip]
-fn test_yaml_else() {
-// Test if evaluating "foo" returns 20
-
-    let s = "
-    foo:
-      - '~> a := 2'
-      - if:
-        - '~> a == 3'
-        - do:
-            - '~> a = 3'
-          else:
-            - '~> a = 4'
-      - return: '~> a * (2 + 3)'
-    ";
-
-    let mut env = ASTEnvironment::new();
-    env.set("a", AST::Number(1));
-    env.set("b", AST::Number(2));
-
-    let docs = YamlLoader::load_from_str(s).unwrap();
-
-    assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(20));
-}
-
-#[test]
-#[allow(unused_attributes)]
-#[rustfmt_skip]
-fn test_return() {
-// Test that return doesn't execute statements after it
-
-    let s = "
-    foo:
-      - return: '~> 2 * (2 + 3)'
-      - '~> a := 2'
-      - if:
-        - '~> a == 2'
-        - do:
-          - '~> a = 3'
-    ";
-
-    let mut env = ASTEnvironment::new();
-    env.set("a", AST::Number(1));
-    env.set("b", AST::Number(2));
-
-    let docs = YamlLoader::load_from_str(s).unwrap();
-
-    assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
-
-    assert_eq!(env.get("a"), Some(&AST::Number(1)));
-}
-
-#[test]
-#[allow(unused_attributes)]
-#[rustfmt_skip]
-fn test_return_last_val() {
-// Test that the last value is returned as value instead of return
-
-    let s = "
-    foo:
-      - '~> a := 2'
-      - if:
-        - '~> a == 2'
-        - do:
-          - '~> a = 3'
-      - '~> 2 * (2 + 3)'
-    ";
-
-    let mut env = ASTEnvironment::new();
-    env.set("a", AST::Number(1));
-    env.set("b", AST::Number(2));
-
-    let docs = YamlLoader::load_from_str(s).unwrap();
-
-    assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
-}
-
-#[test]
-#[allow(unused_attributes)]
-#[rustfmt_skip]
-fn test_local_variable() {
-// Test that local variable is destroyed after if
-
-    let s = "
-    foo:
-      - '~> a := 2'
-      - if:
-        - '~> a == 2'
-        - do:
-          - '~> c := 2'
-          - '~> a := 3'
-      - '~> a * (2 + 3)'
-    ";
-
-    let mut env = ASTEnvironment::new();
-    env.set("a", AST::Number(1));
-    env.set("b", AST::Number(2));
-
-    let docs = YamlLoader::load_from_str(s).unwrap();
-
-    assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
-
-    assert_eq!(env.get("c"), None);
-}
-
-#[test]
-#[allow(unused_attributes)]
-#[rustfmt_skip]
-fn test_while_loop() {
-    let s = "
-    foo:
-      - '~> a := 0'
-      - while:
-        - '~> a != 5'
-        - do:
-          - '~> a = a + 1'
-      - '~> a'
-    ";
-
-    let mut env = ASTEnvironment::new();
-
-    let docs = YamlLoader::load_from_str(s).unwrap();
-
-    assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(5));
-
-    assert_eq!(env.get("a"), Some(&AST::Number(5)));
+    #[test]
+    #[allow(unused_attributes)]
+    #[rustfmt_skip]
+    fn test_yaml_eval() {
+        // Test if evaluating "foo" returns 15
+    
+        let s = "
+        foo:
+          - '~> a := 2'
+          - if:
+            - '~> a == 2'
+            - do:
+              - '~> a = 3'
+          - return: '~> a * (2 + 3)'
+        ";
+    
+        let mut env = ASTEnvironment::new();
+        env.set("a", AST::Number(1));
+        env.set("b", AST::Number(2));
+    
+        let docs = YamlLoader::load_from_str(s).unwrap();
+    
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(15));
+    }
+    
+    #[test]
+    #[allow(unused_attributes)]
+    #[rustfmt_skip]
+    fn test_yaml_else() {
+        // Test if evaluating "foo" returns 20
+    
+        let s = "
+        foo:
+          - '~> a := 2'
+          - if:
+            - '~> a == 3'
+            - do:
+                - '~> a = 3'
+              else:
+                - '~> a = 4'
+          - return: '~> a * (2 + 3)'
+        ";
+    
+        let mut env = ASTEnvironment::new();
+        env.set("a", AST::Number(1));
+        env.set("b", AST::Number(2));
+    
+        let docs = YamlLoader::load_from_str(s).unwrap();
+    
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(20));
+    }
+    
+    #[test]
+    #[allow(unused_attributes)]
+    #[rustfmt_skip]
+    fn test_return() {
+        // Test that return doesn't execute statements after it
+    
+        let s = "
+        foo:
+          - return: '~> 2 * (2 + 3)'
+          - '~> a := 2'
+          - if:
+            - '~> a == 2'
+            - do:
+              - '~> a = 3'
+        ";
+    
+        let mut env = ASTEnvironment::new();
+        env.set("a", AST::Number(1));
+        env.set("b", AST::Number(2));
+    
+        let docs = YamlLoader::load_from_str(s).unwrap();
+    
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
+    
+        assert_eq!(env.get("a"), Some(&AST::Number(1)));
+    }
+    
+    #[test]
+    #[allow(unused_attributes)]
+    #[rustfmt_skip]
+    fn test_return_last_val() {
+        // Test that the last value is returned as value instead of return
+    
+        let s = "
+        foo:
+          - '~> a := 2'
+          - if:
+            - '~> a == 2'
+            - do:
+              - '~> a = 3'
+          - '~> 2 * (2 + 3)'
+        ";
+    
+        let mut env = ASTEnvironment::new();
+        env.set("a", AST::Number(1));
+        env.set("b", AST::Number(2));
+    
+        let docs = YamlLoader::load_from_str(s).unwrap();
+    
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
+    }
+    
+    #[test]
+    #[allow(unused_attributes)]
+    #[rustfmt_skip]
+    fn test_local_variable() {
+        // Test that local variable is destroyed after if
+    
+        let s = "
+        foo:
+          - '~> a := 2'
+          - if:
+            - '~> a == 2'
+            - do:
+              - '~> c := 2'
+              - '~> a := 3'
+          - '~> a * (2 + 3)'
+        ";
+    
+        let mut env = ASTEnvironment::new();
+        env.set("a", AST::Number(1));
+        env.set("b", AST::Number(2));
+    
+        let docs = YamlLoader::load_from_str(s).unwrap();
+    
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
+    
+        assert_eq!(env.get("c"), None);
+    }
+    
+    #[test]
+    #[allow(unused_attributes)]
+    #[rustfmt_skip]
+    fn test_while_loop() {
+        let s = "
+        foo:
+          - '~> a := 0'
+          - while:
+            - '~> a != 5'
+            - do:
+              - '~> a = a + 1'
+          - '~> a'
+        ";
+    
+        let mut env = ASTEnvironment::new();
+    
+        let docs = YamlLoader::load_from_str(s).unwrap();
+    
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(5));
+    
+        assert_eq!(env.get("a"), Some(&AST::Number(5)));
+    }
 }

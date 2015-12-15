@@ -100,35 +100,40 @@ pub fn is_split_character(ch: char) -> bool {
     }
 }
 
-#[test]
-fn test_is_keyword() {
-    assert_eq!(is_keyword("if"), true);
-    assert_eq!(is_keyword("then"), true);
-    assert_eq!(is_keyword("elif"), true);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    assert_eq!(is_keyword("hello"), false);
-}
+    #[test]
+    fn test_is_keyword() {
+        assert_eq!(is_keyword("if"), true);
+        assert_eq!(is_keyword("then"), true);
+        assert_eq!(is_keyword("elif"), true);
 
-#[test]
-fn test_is_operator() {
-    assert_eq!(is_operator("="), true);
-    assert_eq!(is_operator("+"), true);
+        assert_eq!(is_keyword("hello"), false);
+    }
 
-    assert_eq!(is_operator("~"), false);
-}
+    #[test]
+    fn test_is_operator() {
+        assert_eq!(is_operator("="), true);
+        assert_eq!(is_operator("+"), true);
 
-#[test]
-fn test_is_split_character() {
-    assert_eq!(is_split_character(' '), true);
-    assert_eq!(is_split_character('\n'), true);
-    assert_eq!(is_split_character('\t'), true);
+        assert_eq!(is_operator("~"), false);
+    }
 
-    assert_eq!(is_split_character('a'), false);
-}
+    #[test]
+    fn test_is_split_character() {
+        assert_eq!(is_split_character(' '), true);
+        assert_eq!(is_split_character('\n'), true);
+        assert_eq!(is_split_character('\t'), true);
 
-#[test]
-fn test_operator_precedence() {
-    assert!(operator_precedence("*") > operator_precedence("+"));
-    assert!(operator_precedence("+") < operator_precedence("/"));
-    assert!(operator_precedence("hello") == -1);
+        assert_eq!(is_split_character('a'), false);
+    }
+
+    #[test]
+    fn test_operator_precedence() {
+        assert!(operator_precedence("*") > operator_precedence("+"));
+        assert!(operator_precedence("+") < operator_precedence("/"));
+        assert!(operator_precedence("hello") == -1);
+    }
 }

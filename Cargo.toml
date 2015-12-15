@@ -8,7 +8,10 @@ yaml-rust = "*"
 lazy_static = "*"
 num = "*"
 libc = "*"
-clippy = "*"
+clippy = { version = "*", optional = true }
+
+[features]
+default = []
 
 [lib]
 crate-type = ["dylib"]
