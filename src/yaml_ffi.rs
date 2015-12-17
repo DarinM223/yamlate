@@ -6,7 +6,7 @@ use std::ffi::{CStr, CString};
 use std::ptr;
 use ffi_types::{FFIArrayReturnValue, FFIReturnValue, Error, YamlType};
 use yaml::evaluate;
-use environment::Environment;
+use environment::ASTEnvironment;
 
 #[no_mangle]
 pub extern "C" fn yaml_create_from_string(s: *const c_char) -> FFIReturnValue<*const Yaml> {
@@ -36,7 +36,7 @@ pub extern "C" fn yaml_destroy(yaml: *const Yaml) {
 }
 
 #[no_mangle]
-pub extern "C" fn yaml_evaluate(yaml: *const Yaml, env: *mut Environment) -> *const Yaml {
+pub extern "C" fn yaml_evaluate(yaml: *const Yaml, env: *mut ASTEnvironment) -> *const Yaml {
     let yaml = unsafe { &*yaml };
     let environment = unsafe { &mut *env };
 
