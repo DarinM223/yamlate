@@ -1,5 +1,5 @@
 use ast::AST;
-use environment::{Environment, ASTEnvironment};
+use environment::Environment;
 use errors::EvalError;
 use helpers::ast_to_operator;
 use appliers::applier_from_ast;

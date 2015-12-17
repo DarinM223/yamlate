@@ -1,7 +1,6 @@
 use yaml_rust::yaml::Yaml;
 use std::collections::BTreeMap;
-use yaml_rust::YamlLoader;
-use environment::{Environment, ASTEnvironment};
+use environment::Environment;
 use ast::AST;
 use evaluator::Evaluator;
 use parser::Parser;
@@ -20,7 +19,7 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
                                -> YamlType {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
-            if let "do" = keyword.as_str() {
+            if keyword.as_str() == "do" {
                 loop {
                     // check proposition if true
                     let result = evaluate_helper(&Yaml::String(prop_str.to_owned()), env);

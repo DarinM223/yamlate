@@ -1,12 +1,39 @@
 use ast::AST;
 use helpers::{operator_precedence, operator_to_ast};
 use std::collections::VecDeque;
+use errors::LexError;
+
+/// try_op_unwrap is a macro that takes in an option of a string and
+/// attempts to unwrap the option. If it can't, then the enclosing function
+/// returns an error with the second string parameter 
+macro_rules! try_op_unwrap {
+    ($a:expr, $b:expr) => (match $a {
+        Some(val) => val,
+        None => return Some(LexError::new($b)),
+    });
+}
+
+/// try_ast_unwrap is a macro that takes in an option of an AST and attempts
+/// to unwrap the option. If it can't, then the enclosing function returns
+/// an error with the second string parameter 
+macro_rules! try_ast_unwrap {
+    ($a:expr, $b:expr) => (match $a {
+        Some(val) => if val == AST::None {
+            return Some(LexError::new($b));
+        } else {
+            val
+        },
+        None => return Some(LexError::new($b)),
+    });
+}
+
+const OPERATOR_ERROR: &'static str = "Operator cannot be retrieved from the stack";
+const VARIABLE_ERROR: &'static str = "Variable cannot be retrieved from the stack";
 
 /// Parses string into AST
 pub struct Parser {
     var_stack: VecDeque<AST>,
     op_stack: VecDeque<String>,
-    err: Result<bool, String>,
 }
 
 impl Parser {
@@ -14,32 +41,31 @@ impl Parser {
         Parser {
             var_stack: VecDeque::new(),
             op_stack: VecDeque::new(),
-            err: Ok(true),
         }
     }
 
     /// collapse_stacks combines the current variable and operator stacks into an AST
     /// and pushes the result back onto the variable stack
-    fn collapse_stacks(&mut self, add_op_precedence: i32) {
+    fn collapse_stacks(&mut self, add_op_precedence: i32) -> Option<LexError> {
         let mut paren_count = 0;
         while !self.op_stack.is_empty() &&
               (add_op_precedence < operator_precedence(self.op_stack.front().unwrap()) ||
                paren_count > 0) {
-            let operator = self.op_stack.pop_front().unwrap_or(String::new());
+            let operator = try_op_unwrap!(self.op_stack.pop_front(), OPERATOR_ERROR);
 
             match operator.as_str() {
                 ")" => paren_count += 1,
                 "(" => paren_count -= 1, 
 
                 "!" => {
-                    let var = self.var_stack.pop_front().unwrap_or(AST::None);
+                    let var = try_ast_unwrap!(self.var_stack.pop_front(), VARIABLE_ERROR);
                     self.var_stack.push_front(AST::Not(Box::new(var)));
                 }
 
                 // Double parameter operators
                 _ => {
-                    let var1 = self.var_stack.pop_front().unwrap_or(AST::None);
-                    let var2 = self.var_stack.pop_front().unwrap_or(AST::None);
+                    let var1 = try_ast_unwrap!(self.var_stack.pop_front(), VARIABLE_ERROR);
+                    let var2 = try_ast_unwrap!(self.var_stack.pop_front(), VARIABLE_ERROR);
 
                     let ast_node = operator_to_ast(operator.as_str(), var2, var1);
 
@@ -49,7 +75,9 @@ impl Parser {
         }
 
         if paren_count != 0 {
-            self.err = Err("Parentheses do not match".to_owned());
+            Some(LexError::new("Parentheses do not match"))
+        } else {
+            None
         }
     }
 
@@ -58,7 +86,7 @@ impl Parser {
     pub fn parse_to_ast(&mut self,
                         variables: &mut VecDeque<AST>,
                         operators: &mut VecDeque<String>)
-                        -> Option<AST> {
+                        -> Result<AST, LexError> {
         while !operators.is_empty() {
             let mut lower_precedence = false;
             let mut op_precedence = -2;
@@ -80,7 +108,10 @@ impl Parser {
             }
 
             if lower_precedence {
-                self.collapse_stacks(op_precedence);
+                let collapse_result = self.collapse_stacks(op_precedence);
+                if let Some(err) = collapse_result {
+                    return Err(err);
+                }
             }
 
             if !variables.is_empty() && operator != "(" && operator != ")" {
@@ -96,10 +127,17 @@ impl Parser {
         }
 
         if !self.op_stack.is_empty() {
-            self.collapse_stacks(-2);
+            let collapse_result = self.collapse_stacks(-2);
+            if let Some(err) = collapse_result {
+                return Err(err);
+            }
         }
 
-        self.var_stack.pop_front()
+        if self.var_stack.len() > 1 {
+            Err(LexError::new("Expression could not be completely evaluated"))
+        } else {
+            Ok(self.var_stack.pop_front().unwrap_or(AST::None))
+        }
     }
 }
 
@@ -107,6 +145,7 @@ impl Parser {
 mod tests {
     use ast::AST;
     use std::collections::VecDeque;
+    use errors::LexError;
     use super::*;
 
     #[test]
@@ -130,7 +169,7 @@ mod tests {
         parser.op_stack.push_front("+".to_owned());
         parser.op_stack.push_front(")".to_owned());
 
-        parser.collapse_stacks(-2);
+        assert_eq!(parser.collapse_stacks(-2), None);
 
         assert_eq!(parser.var_stack.len(), 1);
 
@@ -138,6 +177,65 @@ mod tests {
                                            box AST::Plus(box AST::Number(2), box AST::Number(3))));
 
         assert_eq!(parser.var_stack.pop_front(), expected_val);
+    }
+
+    #[test]
+    fn test_parse_error_right() {
+        // test ast generation for `1 +`
+        // should return error
+
+        let mut parser = Parser::new();
+
+        let mut variables = VecDeque::new();
+        let mut operators = VecDeque::new();
+
+        variables.push_front(AST::Number(1));
+
+        operators.push_front("+".to_owned());
+
+        let result = parser.parse_to_ast(&mut variables, &mut operators);
+
+        assert_eq!(result,
+                   Err(LexError::new("Variable cannot be retrieved from the stack")));
+    }
+
+    #[test]
+    fn test_parse_error_left() {
+        // test ast generation for `+ 1`
+        // should return error
+
+        let mut parser = Parser::new();
+
+        let mut variables = VecDeque::new();
+        let mut operators = VecDeque::new();
+
+        variables.push_front(AST::None);
+        variables.push_front(AST::Number(1));
+
+        operators.push_front("+".to_owned());
+
+        let result = parser.parse_to_ast(&mut variables, &mut operators);
+
+        assert_eq!(result,
+                   Err(LexError::new("Variable cannot be retrieved from the stack")));
+    }
+
+    #[test]
+    fn test_parse_error_operator() {
+        // test ast generation for `1 2`
+        // should return error
+
+        let mut parser = Parser::new();
+
+        let mut variables = VecDeque::new();
+        let mut operators = VecDeque::new();
+
+        variables.push_front(AST::Number(1));
+        variables.push_front(AST::Number(2));
+
+        let result = parser.parse_to_ast(&mut variables, &mut operators);
+        assert_eq!(result,
+                   Err(LexError::new("Expression could not be completely evaluated")));
     }
 
     #[test]
@@ -176,11 +274,11 @@ mod tests {
         let result = parser.parse_to_ast(&mut variables, &mut operators);
 
         let expected_val =
-            Some(AST::Plus(box AST::Number(1),
-                           box AST::Times(box AST::Exponent(box AST::Not(box AST::Number(5)),
-                                                            box AST::And(box AST::Number(2),
-                                                                         box AST::Number(6))),
-                                          box AST::Number(2))));
+            Ok(AST::Plus(box AST::Number(1),
+                         box AST::Times(box AST::Exponent(box AST::Not(box AST::Number(5)),
+                                                          box AST::And(box AST::Number(2),
+                                                                       box AST::Number(6))),
+                                        box AST::Number(2))));
 
         assert_eq!(result, expected_val);
     }
@@ -205,7 +303,7 @@ mod tests {
 
         let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-        let expected_val = Some(AST::Plus(box AST::Number(1), box AST::Number(2)));
+        let expected_val = Ok(AST::Plus(box AST::Number(1), box AST::Number(2)));
 
         assert_eq!(result, expected_val);
     }
