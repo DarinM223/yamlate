@@ -1,4 +1,5 @@
 import ctypes
+import os
 from python_ffi import Yamlate 
 
 """
@@ -7,13 +8,18 @@ Need to run cargo build --release before running this file
 You also need to be in the python/ directory
 """
 
-lib = ctypes.cdll.LoadLibrary("../target/release/libyamlate.dylib")
+# load correct library depending on operating system
+if os.uname()[0] == 'Darwin':
+    lib = ctypes.cdll.LoadLibrary('../target/release/libyamlate.dylib')
+else:
+    lib = ctypes.cdll.LoadLibrary('../target/release/libyamlate.so')
+
 yamlate = Yamlate(lib)
 
 with yamlate.new_environment() as environment:
     environment.set_integer('another_beetle_nearby', 1)
     environment.set_string('current_season', 'spring')
-        
+
     with open('../examples/bug.yaml', 'r') as yaml_file:
         data = yaml_file.read()
             

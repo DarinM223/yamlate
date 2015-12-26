@@ -42,7 +42,7 @@ pub extern "C" fn yaml_evaluate(yaml: *const Yaml, env: *mut ASTEnvironment) -> 
 
     let result: Yaml = evaluate(yaml, environment);
 
-    unsafe { transmute(box result) }
+    unsafe { transmute::<Box<Yaml>, *const Yaml>(box result) }
 }
 
 #[no_mangle]
@@ -100,13 +100,15 @@ pub extern "C" fn yaml_string_get(yaml: *const Yaml) -> FFIReturnValue<*const c_
     let yaml = unsafe { &*yaml };
 
     if let Yaml::String(ref s) = *yaml {
+        let c_str = CString::new(s.as_str()).unwrap().into_raw();
+
         FFIReturnValue {
-            value: CString::new(s.as_str()).unwrap().as_ptr(),
+            value: c_str as *const c_char,
             error: Error::None as i32,
         }
     } else {
         FFIReturnValue {
-            value: CString::new("").unwrap().as_ptr(),
+            value: CString::new("").unwrap().into_raw() as *const c_char,
             error: Error::WrongType as i32,
         }
     }
@@ -121,9 +123,8 @@ pub extern "C" fn yaml_hash_keys(yaml: *const Yaml) -> FFIArrayReturnValue<*cons
     if let Yaml::Hash(ref h) = *yaml {
         for (key, _) in h {
             if let Yaml::String(ref s) = *key {
-                // no idea why as_ptr doesn't work with arrays of arrays :(
                 let c_str = CString::new(s.as_str()).unwrap().into_raw();
-                keys.push(c_str);
+                keys.push(c_str as *const c_char);
             }
         }
 
