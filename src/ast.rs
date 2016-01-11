@@ -21,4 +21,3 @@ pub enum AST {
     String(String),
     None,
 }
-

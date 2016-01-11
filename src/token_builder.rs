@@ -11,7 +11,6 @@ pub trait TokenBuilder {
     fn append(&self, ch: char, state: &mut LexerState) -> Option<LexError>;
 }
 
-//
 // Implementations of TokenBuilder for handling letters,
 // digits, operators, quotes, and dots
 //
@@ -29,8 +28,9 @@ impl TokenBuilder for LetterBuilder {
             WordState::String => state.curr_chars.push(ch),
 
             WordState::Number |
-            WordState::Decimal =>
-                return Some(LexError::new("Number cannot have a letter after it")),
+            WordState::Decimal => {
+                return Some(LexError::new("Number cannot have a letter after it"))
+            }
 
             WordState::Operator => {
                 let curr_str = state.emit_string();
@@ -128,8 +128,9 @@ impl TokenBuilder for QuoteBuilder {
 
             WordState::Number |
             WordState::Decimal |
-            WordState::Variable =>
-                return Some(LexError::new("Cannot create a string after invalid type")),
+            WordState::Variable => {
+                return Some(LexError::new("Cannot create a string after invalid type"))
+            }
 
             WordState::Operator => {
                 let curr_str = state.emit_string();
@@ -165,18 +166,16 @@ impl TokenBuilder for DotBuilder {
     }
 }
 
-// TODO(DarinM223): allocates a new builder every method call
-// instead should just use the same instance multiple times
-pub fn builder_from_ch(ch: &char) -> Box<TokenBuilder> {
-    if ch.is_alphabetic() || *ch == '_' {
-        box LetterBuilder
+pub fn append_ch(ch: char, state: &mut LexerState) -> Option<LexError> {
+    if ch.is_alphabetic() || ch == '_' {
+        LetterBuilder.append(ch, state)
     } else if ch.is_digit(10) {
-        box DigitBuilder
-    } else if *ch == '\"' {
-        box QuoteBuilder
-    } else if *ch == '.' {
-        box DotBuilder
+        DigitBuilder.append(ch, state)
+    } else if ch == '\"' {
+        QuoteBuilder.append(ch, state)
+    } else if ch == '.' {
+        DotBuilder.append(ch, state)
     } else {
-        box OperatorBuilder
+        OperatorBuilder.append(ch, state)
     }
 }

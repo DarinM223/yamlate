@@ -11,7 +11,9 @@ pub extern "C" fn environment_create() -> *mut ASTEnvironment {
 }
 
 #[no_mangle]
-pub extern "C" fn environment_set_integer(env: *mut ASTEnvironment, name: *const c_char, value: i32) {
+pub extern "C" fn environment_set_integer(env: *mut ASTEnvironment,
+                                          name: *const c_char,
+                                          value: i32) {
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
@@ -30,7 +32,9 @@ pub extern "C" fn environment_set_string(env: *mut ASTEnvironment,
 }
 
 #[no_mangle]
-pub extern "C" fn environment_set_decimal(env: *mut ASTEnvironment, name: *const c_char, value: f64) {
+pub extern "C" fn environment_set_decimal(env: *mut ASTEnvironment,
+                                          name: *const c_char,
+                                          value: f64) {
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
@@ -45,18 +49,24 @@ pub extern "C" fn environment_get_integer(env: *mut ASTEnvironment,
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
     match environment.get(key.as_str()) {
-        Some(&AST::Number(val)) => FFIReturnValue {
-            value: val,
-            error: Error::None as i32,
-        },
-        None => FFIReturnValue {
-            value: 0,
-            error: Error::NotDefined as i32,
-        },
-        _ => FFIReturnValue {
-            value: 0,
-            error: Error::WrongType as i32,
-        },
+        Some(&AST::Number(val)) => {
+            FFIReturnValue {
+                value: val,
+                error: Error::None as i32,
+            }
+        }
+        None => {
+            FFIReturnValue {
+                value: 0,
+                error: Error::NotDefined as i32,
+            }
+        }
+        _ => {
+            FFIReturnValue {
+                value: 0,
+                error: Error::WrongType as i32,
+            }
+        }
     }
 }
 
@@ -68,18 +78,24 @@ pub extern "C" fn environment_get_string(env: *mut ASTEnvironment,
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
     match environment.get(key.as_str()) {
-        Some(&AST::String(ref val)) => FFIReturnValue {
-            value: CString::new(val.as_str()).unwrap().as_ptr(),
-            error: Error::None as i32,
-        },
-        None => FFIReturnValue {
-            value: CString::new("").unwrap().as_ptr(),
-            error: Error::NotDefined as i32,
-        },
-        _ => FFIReturnValue {
-            value: CString::new("").unwrap().as_ptr(),
-            error: Error::WrongType as i32,
-        },
+        Some(&AST::String(ref val)) => {
+            FFIReturnValue {
+                value: CString::new(val.as_str()).unwrap().as_ptr(),
+                error: Error::None as i32,
+            }
+        }
+        None => {
+            FFIReturnValue {
+                value: CString::new("").unwrap().as_ptr(),
+                error: Error::NotDefined as i32,
+            }
+        }
+        _ => {
+            FFIReturnValue {
+                value: CString::new("").unwrap().as_ptr(),
+                error: Error::WrongType as i32,
+            }
+        }
     }
 }
 
@@ -91,18 +107,24 @@ pub extern "C" fn environment_get_decimal(env: *mut ASTEnvironment,
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
     match environment.get(key.as_str()) {
-        Some(&AST::Decimal(val)) => FFIReturnValue {
-            value: val,
-            error: Error::None as i32,
-        },
-        None => FFIReturnValue {
-            value: 0.0,
-            error: Error::NotDefined as i32,
-        },
-        _ => FFIReturnValue {
-            value: 0.0,
-            error: Error::WrongType as i32,
-        },
+        Some(&AST::Decimal(val)) => {
+            FFIReturnValue {
+                value: val,
+                error: Error::None as i32,
+            }
+        }
+        None => {
+            FFIReturnValue {
+                value: 0.0,
+                error: Error::NotDefined as i32,
+            }
+        }
+        _ => {
+            FFIReturnValue {
+                value: 0.0,
+                error: Error::WrongType as i32,
+            }
+        }
     }
 }
 

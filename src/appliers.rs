@@ -1,6 +1,7 @@
 extern crate num;
 
 use ast::AST;
+use helpers::ast_to_operator;
 use evaluator::{Evaluator, ASTResult};
 use errors::EvalError;
 use self::num::traits::Num;
@@ -82,10 +83,12 @@ impl Applier for ArithmeticApplier {
                 let param1: i32 = val;
 
                 match result2 {
-                    Ok(AST::Decimal(param2)) =>
-                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1 as f64, param2))),
-                    Ok(AST::Number(param2)) =>
-                        Ok(AST::Number(apply_arithmetic_operator(operator, param1, param2))),
+                    Ok(AST::Decimal(param2)) => {
+                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1 as f64, param2)))
+                    }
+                    Ok(AST::Number(param2)) => {
+                        Ok(AST::Number(apply_arithmetic_operator(operator, param1, param2)))
+                    }
                     _ => Err(EvalError::new("Right hand result is not a numeric value")),
                 }
             }
@@ -93,10 +96,12 @@ impl Applier for ArithmeticApplier {
                 let param1: f64 = val;
 
                 match result2 {
-                    Ok(AST::Number(param2)) =>
-                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2 as f64))),
-                    Ok(AST::Decimal(param2)) =>
-                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2))),
+                    Ok(AST::Number(param2)) => {
+                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2 as f64)))
+                    }
+                    Ok(AST::Decimal(param2)) => {
+                        Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2)))
+                    }
                     _ => Err(EvalError::new("Right hand result is not a numeric value")),
                 }
             }
@@ -219,28 +224,39 @@ impl Applier for BooleanApplier {
     }
 }
 
-pub fn applier_from_ast(ast: AST) -> Result<Box<Applier>, EvalError> {
+pub fn evaluate_ast(ast: AST, evaluator: &mut Evaluator) -> ASTResult {
+    let op_string = ast_to_operator(&ast);
+    let op_str = op_string.as_str();
+
     match ast {
-        AST::Variable(name) => Ok(box VariableApplier::new(name.as_str())),
+        AST::Variable(name) => VariableApplier::new(name.as_str()).evaluate(evaluator, op_str),
 
         value @ AST::Number(_) |
         value @ AST::String(_) |
-        value @ AST::Decimal(_) => Ok(box ValueApplier::new(value)),
+        value @ AST::Decimal(_) => ValueApplier::new(value).evaluate(evaluator, op_str),
 
         AST::Assign(box child1, box child2) |
-        AST::Declare(box child1, box child2) => Ok(box AssignmentApplier::new(child1, child2)),
+        AST::Declare(box child1, box child2) => {
+            AssignmentApplier::new(child1, child2).evaluate(evaluator, op_str)
+        }
 
         AST::Equal(box child1, box child2) |
-        AST::NotEqual(box child1, box child2) => Ok(box EqualityApplier::new(child1, child2)),
+        AST::NotEqual(box child1, box child2) => {
+            EqualityApplier::new(child1, child2).evaluate(evaluator, op_str)
+        }
 
         AST::And(box child1, box child2) |
-        AST::Or(box child1, box child2) => Ok(box BooleanApplier::new(child1, child2)),
+        AST::Or(box child1, box child2) => {
+            BooleanApplier::new(child1, child2).evaluate(evaluator, op_str)
+        }
 
         AST::Plus(box child1, box child2) |
         AST::Minus(box child1, box child2) |
         AST::Times(box child1, box child2) |
         AST::Divide(box child1, box child2) |
-        AST::Modulo(box child1, box child2) => Ok(box ArithmeticApplier::new(child1, child2)),
+        AST::Modulo(box child1, box child2) => {
+            ArithmeticApplier::new(child1, child2).evaluate(evaluator, op_str)
+        }
 
         _ => Err(EvalError::new("Operation is not implemented yet")),
     }

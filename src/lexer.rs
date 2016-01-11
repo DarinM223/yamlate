@@ -1,7 +1,7 @@
 use ast::AST;
 use std::collections::VecDeque;
 use errors::LexError;
-use token_builder::builder_from_ch;
+use token_builder::append_ch;
 
 #[derive(Clone, PartialEq)]
 pub enum WordState {
@@ -61,8 +61,7 @@ impl Lexer {
                     self.state.curr_chars.push(ch);
                 }
             } else {
-                let builder = builder_from_ch(&ch);
-                let result = builder.append(ch, &mut self.state);
+                let result = append_ch(ch, &mut self.state);
                 if let Some(err) = result {
                     return Some(err);
                 }

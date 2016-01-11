@@ -1,8 +1,7 @@
 use ast::AST;
 use environment::Environment;
 use errors::EvalError;
-use helpers::ast_to_operator;
-use appliers::applier_from_ast;
+use appliers::evaluate_ast;
 
 pub struct Evaluator<'a> {
     pub env: &'a mut Environment,
@@ -18,17 +17,7 @@ impl<'a> Evaluator<'a> {
     /// evaluate evaluates the given AST and returns an AST 
     /// of the result 
     pub fn evaluate(&mut self, ast: AST) -> ASTResult {
-        let op = ast_to_operator(&ast);
-
-        let result = applier_from_ast(ast);
-
-        if let Ok(mut applier) = result {
-            applier.evaluate(self, op.as_str())
-        } else if let Err(e) = result {
-            Err(e)
-        } else {
-            Err(EvalError::new("Error"))
-        }
+        evaluate_ast(ast, self)
     }
 }
 

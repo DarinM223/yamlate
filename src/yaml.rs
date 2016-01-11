@@ -106,12 +106,14 @@ fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut Environment) -> YamlType
                     } else if let Yaml::Hash(ref h) = *val {
                         // applies logic based on the type of keyword
                         match s {
-                            "if" =>
-                                return apply_nested_if_keywords(h, prop_str.clone().as_str(), env),
-                            "while" =>
+                            "if" => {
+                                return apply_nested_if_keywords(h, prop_str.clone().as_str(), env)
+                            }
+                            "while" => {
                                 return apply_nested_while_keywords(h,
                                                                    prop_str.clone().as_str(),
-                                                                   env),
+                                                                   env)
+                            }
                             _ => {}
                         }
                     }
@@ -228,7 +230,7 @@ mod tests {
     
         assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(15));
     }
-    
+
     #[test]
     #[allow(unused_attributes)]
     #[rustfmt_skip]
@@ -255,7 +257,7 @@ mod tests {
     
         assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(20));
     }
-    
+
     #[test]
     #[allow(unused_attributes)]
     #[rustfmt_skip]
@@ -282,7 +284,7 @@ mod tests {
     
         assert_eq!(env.get("a"), Some(&AST::Number(1)));
     }
-    
+
     #[test]
     #[allow(unused_attributes)]
     #[rustfmt_skip]
@@ -307,7 +309,7 @@ mod tests {
     
         assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
     }
-    
+
     #[test]
     #[allow(unused_attributes)]
     #[rustfmt_skip]
@@ -335,7 +337,7 @@ mod tests {
     
         assert_eq!(env.get("c"), None);
     }
-    
+
     #[test]
     #[allow(unused_attributes)]
     #[rustfmt_skip]
