@@ -1,10 +1,8 @@
-extern crate num;
-
 use ast::AST;
 use helpers::ast_to_operator;
 use evaluator::{Evaluator, ASTResult};
 use errors::EvalError;
-use self::num::traits::Num;
+use num::traits::Num;
 use std::mem;
 
 pub fn apply_arithmetic_operator<T: Num>(operator: &str, a: T, b: T) -> T {

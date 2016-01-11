@@ -1,7 +1,9 @@
+mod token_builder;
+
 use ast::AST;
 use std::collections::VecDeque;
 use errors::LexError;
-use token_builder::append_ch;
+use lexer::token_builder::append_ch;
 
 #[derive(Clone, PartialEq)]
 pub enum WordState {

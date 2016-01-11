@@ -2,7 +2,7 @@ use ast::AST;
 use environment::{Environment, ASTEnvironment};
 use std::mem::transmute;
 use std::ffi::{CStr, CString};
-use ffi_types::{FFIReturnValue, Error};
+use ffi::types::{FFIReturnValue, Error};
 use libc::c_char;
 
 #[no_mangle]

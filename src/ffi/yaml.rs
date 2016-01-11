@@ -4,7 +4,7 @@ use yaml_rust::YamlLoader;
 use std::mem::{transmute, forget};
 use std::ffi::{CStr, CString};
 use std::ptr;
-use ffi_types::{FFIArrayReturnValue, FFIReturnValue, Error, YamlType};
+use ffi::types::{FFIArrayReturnValue, FFIReturnValue, Error, YamlType};
 use yaml::evaluate;
 use environment::ASTEnvironment;
 

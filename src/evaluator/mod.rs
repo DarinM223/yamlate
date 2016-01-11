@@ -1,7 +1,9 @@
+mod appliers;
+
 use ast::AST;
 use environment::Environment;
 use errors::EvalError;
-use appliers::evaluate_ast;
+use evaluator::appliers::evaluate_ast;
 
 pub struct Evaluator<'a> {
     pub env: &'a mut Environment,

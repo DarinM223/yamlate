@@ -8,6 +8,7 @@
 
 extern crate yaml_rust;
 extern crate libc;
+extern crate num;
 
 #[macro_use]
 extern crate lazy_static;
@@ -16,13 +17,12 @@ mod errors;
 mod helpers;
 mod ast;
 mod parser;
-mod token_builder;
 mod lexer;
 pub mod environment;
-mod appliers;
 mod evaluator;
 pub mod yaml;
-mod ffi_types;
 
-pub mod environment_ffi;
-pub mod yaml_ffi;
+pub mod ffi;
+
+use ffi::yaml::*;
+use ffi::environment::*;
