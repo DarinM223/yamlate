@@ -37,7 +37,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new() -> Self {
+    pub fn new() -> Parser {
         Parser {
             var_stack: VecDeque::new(),
             op_stack: VecDeque::new(),

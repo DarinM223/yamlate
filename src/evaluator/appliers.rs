@@ -26,7 +26,7 @@ pub struct ValueApplier {
 }
 
 impl ValueApplier {
-    pub fn new(value: AST) -> Self {
+    pub fn new(value: AST) -> ValueApplier {
         ValueApplier { value: value }
     }
 }
@@ -42,7 +42,7 @@ pub struct VariableApplier {
 }
 
 impl VariableApplier {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &str) -> VariableApplier {
         VariableApplier { name: name.to_owned() }
     }
 }
@@ -63,7 +63,7 @@ pub struct ArithmeticApplier {
 }
 
 impl ArithmeticApplier {
-    pub fn new(child1: AST, child2: AST) -> Self {
+    pub fn new(child1: AST, child2: AST) -> ArithmeticApplier {
         ArithmeticApplier {
             child1: child1,
             child2: child2,
@@ -114,7 +114,7 @@ pub struct AssignmentApplier {
 }
 
 impl AssignmentApplier {
-    pub fn new(variable: AST, value: AST) -> Self {
+    pub fn new(variable: AST, value: AST) -> AssignmentApplier {
         AssignmentApplier {
             variable: variable,
             value: value,
@@ -153,7 +153,7 @@ pub struct EqualityApplier {
 }
 
 impl EqualityApplier {
-    pub fn new(child1: AST, child2: AST) -> Self {
+    pub fn new(child1: AST, child2: AST) -> EqualityApplier {
         EqualityApplier {
             child1: child1,
             child2: child2,
@@ -193,7 +193,7 @@ pub struct BooleanApplier {
 }
 
 impl BooleanApplier {
-    pub fn new(child1: AST, child2: AST) -> Self {
+    pub fn new(child1: AST, child2: AST) -> BooleanApplier {
         BooleanApplier {
             child1: child1,
             child2: child2,

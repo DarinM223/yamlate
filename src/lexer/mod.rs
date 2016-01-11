@@ -23,7 +23,7 @@ pub struct LexerState {
 }
 
 impl LexerState {
-    pub fn new() -> Self {
+    pub fn new() -> LexerState {
         LexerState {
             variables: VecDeque::new(),
             operators: VecDeque::new(),
@@ -48,7 +48,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn new() -> Self {
+    pub fn new() -> Lexer {
         Lexer { state: LexerState::new() }
     }
 

@@ -39,7 +39,7 @@ pub struct ASTEnvironment {
 }
 
 impl ASTEnvironment {
-    pub fn new() -> Self {
+    pub fn new() -> ASTEnvironment {
         ASTEnvironment { stack: vec![HashMap::new()] }
     }
 }

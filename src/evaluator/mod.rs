@@ -12,7 +12,7 @@ pub struct Evaluator<'a> {
 pub type ASTResult = Result<AST, EvalError>;
 
 impl<'a> Evaluator<'a> {
-    pub fn new(env: &'a mut Environment) -> Self {
+    pub fn new(env: &'a mut Environment) -> Evaluator {
         Evaluator { env: env }
     }
 
