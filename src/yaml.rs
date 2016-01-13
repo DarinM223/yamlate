@@ -1,10 +1,10 @@
-use yaml_rust::yaml::Yaml;
-use std::collections::BTreeMap;
-use environment::Environment;
 use ast::AST;
+use environment::Environment;
 use evaluator::Evaluator;
-use parser::Parser;
 use lexer::Lexer;
+use parser::Parser;
+use std::collections::BTreeMap;
+use yaml_rust::yaml::Yaml;
 
 #[derive(Debug, PartialEq)]
 pub enum YamlType {
@@ -201,10 +201,10 @@ pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Yaml {
 #[cfg(test)]
 mod tests {
     use ast::AST;
-    use yaml_rust::yaml::Yaml;
-    use yaml_rust::YamlLoader;
-    use environment::{Environment, ASTEnvironment};
+    use environment::{ASTEnvironment ,Environment};
     use super::*;
+    use yaml_rust::YamlLoader;
+    use yaml_rust::yaml::Yaml;
 
     #[test]
     #[allow(unused_attributes)]

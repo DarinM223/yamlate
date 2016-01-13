@@ -1,7 +1,7 @@
 use ast::AST;
-use helpers::ast_to_operator;
-use evaluator::{Evaluator, ASTResult};
 use errors::EvalError;
+use evaluator::{ASTResult, Evaluator};
+use helpers::ast_to_operator;
 use num::traits::Num;
 use std::mem;
 

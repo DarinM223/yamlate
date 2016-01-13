@@ -93,7 +93,7 @@ impl Environment for ASTEnvironment {
 #[cfg(test)]
 mod tests {
     use ast::AST;
-    use super::{Environment, ASTEnvironment};
+    use super::{ASTEnvironment, Environment};
 
     #[test]
     fn test_bad_value_empty_stack() {

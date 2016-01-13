@@ -1,7 +1,7 @@
 use ast::AST;
+use errors::LexError;
 use helpers::{operator_precedence, operator_to_ast};
 use std::collections::VecDeque;
-use errors::LexError;
 
 /// try_op_unwrap is a macro that takes in an option of a string and
 /// attempts to unwrap the option. If it can't, then the enclosing function

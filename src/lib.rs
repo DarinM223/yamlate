@@ -1,28 +1,28 @@
-#![feature(convert)]
 #![feature(box_patterns)]
 #![feature(box_syntax)]
+#![feature(convert)]
 #![feature(custom_attribute)]
+#![feature(plugin)]
+#![plugin(sorty)]
+#![warn(unsorted_declarations)]
 
 #[cfg_attr(feature="clippy", feature(plugin))]
 #[cfg_attr(feature="clippy", plugin(clippy))]
 
-extern crate yaml_rust;
-extern crate libc;
-extern crate num;
-
 #[macro_use]
 extern crate lazy_static;
 
-mod errors;
-mod helpers;
+extern crate libc;
+extern crate num;
+extern crate yaml_rust;
+
 mod ast;
-mod parser;
-mod lexer;
-pub mod environment;
+mod errors;
 mod evaluator;
-pub mod yaml;
+mod helpers;
+mod lexer;
+mod parser;
 
+pub mod environment;
 pub mod ffi;
-
-use ffi::yaml::*;
-use ffi::environment::*;
+pub mod yaml;

@@ -1,7 +1,7 @@
-use lexer::{WordState, LexerState};
-use errors::LexError;
 use ast::AST;
+use errors::LexError;
 use helpers::is_operator;
+use lexer::{LexerState, WordState};
 
 /// TokenBuilder is used by the lexer to apply certain actions to the LexerState through
 /// adding a new character

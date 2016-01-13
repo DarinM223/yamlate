@@ -103,12 +103,24 @@ YAML file
 ### Contributing
 
 Contributions are welcome! Make sure that all of the existing test cases pass (from cargo test) and if you are adding features
-you are adding additional test cases. Also make sure that you are not getting any warnings from clippy. If you are getting clippy warnings
+you are adding additional test cases. 
+
+Make sure that you are not getting any warnings from clippy and rust-sorty. 
+
+If you are getting clippy warnings
 there will be a line after the warning with something like this:
 
 ```
 help: for further information visit https://github.com/Manishearth/rust-clippy/wiki#<clippy_warning_here>
 ```
+
+If you are getting rust-sorty warnings the warning will look like this:
+
+```
+warning: use statements should be in alphabetical order!, #[warn(unsorted_declarations)] on by default
+```
+
+There only warnings should be about #![...] declarations (because rust-sorty doesn't work for #![...] right now)
 
 You should also make sure your code is formatted with rustfmt. 
 

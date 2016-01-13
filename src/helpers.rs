@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use ast::AST;
+use std::collections::HashMap;
 
 lazy_static! {
     static ref OPERATORS: HashMap<String, i32> = {

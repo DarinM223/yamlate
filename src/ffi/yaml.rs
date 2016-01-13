@@ -1,12 +1,12 @@
-use libc::c_char;
-use yaml_rust::yaml::Yaml;
-use yaml_rust::YamlLoader;
-use std::mem::{transmute, forget};
-use std::ffi::{CStr, CString};
-use std::ptr;
-use ffi::types::{FFIArrayReturnValue, FFIReturnValue, Error, YamlType};
-use yaml::evaluate;
 use environment::ASTEnvironment;
+use ffi::types::{Error, FFIArrayReturnValue, FFIReturnValue, YamlType};
+use libc::c_char;
+use std::ffi::{CStr, CString};
+use std::mem::{forget, transmute};
+use std::ptr;
+use yaml::evaluate;
+use yaml_rust::YamlLoader;
+use yaml_rust::yaml::Yaml;
 
 #[no_mangle]
 pub extern "C" fn yaml_create_from_string(s: *const c_char) -> FFIReturnValue<*const Yaml> {

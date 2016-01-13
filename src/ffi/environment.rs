@@ -1,9 +1,9 @@
 use ast::AST;
-use environment::{Environment, ASTEnvironment};
-use std::mem::transmute;
-use std::ffi::{CStr, CString};
-use ffi::types::{FFIReturnValue, Error};
+use environment::{ASTEnvironment, Environment};
+use ffi::types::{Error, FFIReturnValue};
 use libc::c_char;
+use std::ffi::{CStr, CString};
+use std::mem::transmute;
 
 #[no_mangle]
 pub extern "C" fn environment_create() -> *mut ASTEnvironment {
