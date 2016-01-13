@@ -144,8 +144,8 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use ast::AST;
-    use std::collections::VecDeque;
     use errors::LexError;
+    use std::collections::VecDeque;
     use super::*;
 
     #[test]

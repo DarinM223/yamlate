@@ -1,8 +1,4 @@
-#![feature(box_patterns)]
-#![feature(box_syntax)]
-#![feature(convert)]
-#![feature(custom_attribute)]
-#![feature(plugin)]
+#![feature(box_patterns, box_syntax, convert, custom_attribute, plugin)]
 #![plugin(sorty)]
 #![warn(unsorted_declarations)]
 

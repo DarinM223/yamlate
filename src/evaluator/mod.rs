@@ -26,7 +26,7 @@ impl<'a> Evaluator<'a> {
 #[cfg(test)]
 mod tests {
     use ast::AST;
-    use environment::{Environment, ASTEnvironment};
+    use environment::{ASTEnvironment, Environment};
     use evaluator::Evaluator;
 
     #[test]
