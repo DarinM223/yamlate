@@ -56,17 +56,14 @@ impl Lexer {
     /// tokens to the lexer. You can retrieve the tokenized
     /// operators through self.state.operators, and the tokenized
     /// AST constants/variables through self.state.variables
-    pub fn parse_string(&mut self, s: &str) -> Option<LexError> {
+    pub fn parse_string(&mut self, s: &str) -> Result<(), LexError> {
         for ch in s.to_owned().chars() {
             if ch == ' ' || ch == '\t' {
                 if self.state.curr_state == WordState::String {
                     self.state.curr_chars.push(ch);
                 }
             } else {
-                let result = append_ch(ch, &mut self.state);
-                if let Some(err) = result {
-                    return Some(err);
-                }
+                try!(append_ch(ch, &mut self.state));
             }
         }
 
@@ -89,7 +86,7 @@ impl Lexer {
             }
         }
 
-        None
+        Ok(())
     }
 }
 
@@ -104,7 +101,7 @@ mod tests {
     fn test_no_paren() {
         let s = "a+2-b+3";
         let mut lexer = Lexer::new();
-        assert_eq!(lexer.parse_string(s), None);
+        assert_eq!(lexer.parse_string(s), Ok(()));
 
         let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
                                                   AST::Number(2),
@@ -127,7 +124,7 @@ mod tests {
     fn test_paren() {
         let s = "(a+(2-b)+(3*5))";
         let mut lexer = Lexer::new();
-        assert_eq!(lexer.parse_string(s), None);
+        assert_eq!(lexer.parse_string(s), Ok(()));
 
         let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
                                                   AST::Number(2),
@@ -152,7 +149,7 @@ mod tests {
     fn test_equals() {
         let s = "(a==(2-b)+(3!=5))";
         let mut lexer = Lexer::new();
-        assert_eq!(lexer.parse_string(s), None);
+        assert_eq!(lexer.parse_string(s), Ok(()));
 
         let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
                                                   AST::Number(2),
@@ -177,7 +174,7 @@ mod tests {
     fn test_spaces() {
         let s = "( a + 2 - \t b \t^ 2 ) == 5";
         let mut lexer = Lexer::new();
-        assert_eq!(lexer.parse_string(s), None);
+        assert_eq!(lexer.parse_string(s), Ok(()));
 
         let variable_result: VecDeque<AST> = vec![AST::Variable("a".to_owned()),
                                                   AST::Number(2),
@@ -201,7 +198,7 @@ mod tests {
     fn test_strings() {
         let s = "( \"Hello world1234 + \" + \"bye123\" )";
         let mut lexer = Lexer::new();
-        assert_eq!(lexer.parse_string(s), None);
+        assert_eq!(lexer.parse_string(s), Ok(()));
 
         let variable_result: VecDeque<AST> = vec![AST::String("Hello world1234 + ".to_owned()),
                                                   AST::String("bye123".to_owned())]
@@ -222,7 +219,7 @@ mod tests {
     fn test_float() {
         let s = "1.23 - 3.12 + 123.45678";
         let mut lexer = Lexer::new();
-        assert_eq!(lexer.parse_string(s), None);
+        assert_eq!(lexer.parse_string(s), Ok(()));
 
         let variable_result: VecDeque<AST> = vec![AST::Decimal(1.23),
                                                   AST::Decimal(3.12),

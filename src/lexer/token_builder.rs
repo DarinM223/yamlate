@@ -8,7 +8,7 @@ use lexer::{LexerState, WordState};
 pub trait TokenBuilder {
     /// append adds a character from the parsed string, changing the lexer state depending
     /// on the type of character
-    fn append(&self, ch: char, state: &mut LexerState) -> Option<LexError>;
+    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), LexError>;
 }
 
 // Implementations of TokenBuilder for handling letters,
@@ -22,15 +22,13 @@ pub struct QuoteBuilder;
 pub struct DotBuilder;
 
 impl TokenBuilder for LetterBuilder {
-    fn append(&self, ch: char, state: &mut LexerState) -> Option<LexError> {
+    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), LexError> {
         match state.curr_state {
             WordState::Variable |
             WordState::String => state.curr_chars.push(ch),
 
             WordState::Number |
-            WordState::Decimal => {
-                return Some(LexError::new("Number cannot have a letter after it"))
-            }
+            WordState::Decimal => return Err(LexError::new("Number cannot have a letter after it")),
 
             WordState::Operator => {
                 let curr_str = state.emit_string();
@@ -45,12 +43,12 @@ impl TokenBuilder for LetterBuilder {
             }
         }
 
-        None
+        Ok(())
     }
 }
 
 impl TokenBuilder for DigitBuilder {
-    fn append(&self, ch: char, state: &mut LexerState) -> Option<LexError> {
+    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), LexError> {
         match state.curr_state {
             WordState::Variable |
             WordState::Number |
@@ -70,12 +68,12 @@ impl TokenBuilder for DigitBuilder {
             }
         }
 
-        None
+        Ok(())
     }
 }
 
 impl TokenBuilder for OperatorBuilder {
-    fn append(&self, ch: char, state: &mut LexerState) -> Option<LexError> {
+    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), LexError> {
         match state.curr_state {
             WordState::Variable |
             WordState::Number |
@@ -113,12 +111,12 @@ impl TokenBuilder for OperatorBuilder {
             }
         }
 
-        None
+        Ok(())
     }
 }
 
 impl TokenBuilder for QuoteBuilder {
-    fn append(&self, _ch: char, state: &mut LexerState) -> Option<LexError> {
+    fn append(&self, _ch: char, state: &mut LexerState) -> Result<(), LexError> {
         match state.curr_state {
             WordState::String => {
                 let curr_str = state.emit_string();
@@ -129,7 +127,7 @@ impl TokenBuilder for QuoteBuilder {
             WordState::Number |
             WordState::Decimal |
             WordState::Variable => {
-                return Some(LexError::new("Cannot create a string after invalid type"))
+                return Err(LexError::new("Cannot create a string after invalid type"))
             }
 
             WordState::Operator => {
@@ -141,12 +139,12 @@ impl TokenBuilder for QuoteBuilder {
             WordState::None => state.curr_state = WordState::String,
         }
 
-        None
+        Ok(())
     }
 }
 
 impl TokenBuilder for DotBuilder {
-    fn append(&self, ch: char, state: &mut LexerState) -> Option<LexError> {
+    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), LexError> {
         match state.curr_state {
             WordState::String => state.curr_chars.push(ch),
 
@@ -157,16 +155,16 @@ impl TokenBuilder for DotBuilder {
 
             WordState::Operator |
             WordState::Decimal |
-            WordState::Variable => return Some(LexError::new("Cannot have a dot after")),
+            WordState::Variable => return Err(LexError::new("Cannot have a dot after")),
 
-            WordState::None => return Some(LexError::new("Cannot start with dot")),
+            WordState::None => return Err(LexError::new("Cannot start with dot")),
         }
 
-        None
+        Ok(())
     }
 }
 
-pub fn append_ch(ch: char, state: &mut LexerState) -> Option<LexError> {
+pub fn append_ch(ch: char, state: &mut LexerState) -> Result<(), LexError> {
     if ch.is_alphabetic() || ch == '_' {
         LetterBuilder.append(ch, state)
     } else if ch.is_digit(10) {

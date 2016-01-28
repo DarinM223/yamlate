@@ -73,31 +73,31 @@ impl ArithmeticApplier {
 
 impl Applier for ArithmeticApplier {
     fn evaluate(&mut self, evaluator: &mut Evaluator, operator: &str) -> ASTResult {
-        let result1 = evaluator.evaluate(mem::replace(&mut self.child1, AST::None));
-        let result2 = evaluator.evaluate(mem::replace(&mut self.child2, AST::None));
+        let result1 = try!(evaluator.evaluate(mem::replace(&mut self.child1, AST::None)));
+        let result2 = try!(evaluator.evaluate(mem::replace(&mut self.child2, AST::None)));
 
         match result1 {
-            Ok(AST::Number(val)) => {
+            AST::Number(val) => {
                 let param1: i32 = val;
 
                 match result2 {
-                    Ok(AST::Decimal(param2)) => {
+                    AST::Decimal(param2) => {
                         Ok(AST::Decimal(apply_arithmetic_operator(operator, param1 as f64, param2)))
                     }
-                    Ok(AST::Number(param2)) => {
+                    AST::Number(param2) => {
                         Ok(AST::Number(apply_arithmetic_operator(operator, param1, param2)))
                     }
                     _ => Err(EvalError::new("Right hand result is not a numeric value")),
                 }
             }
-            Ok(AST::Decimal(val)) => {
+            AST::Decimal(val) => {
                 let param1: f64 = val;
 
                 match result2 {
-                    Ok(AST::Number(param2)) => {
+                    AST::Number(param2) => {
                         Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2 as f64)))
                     }
-                    Ok(AST::Decimal(param2)) => {
+                    AST::Decimal(param2) => {
                         Ok(AST::Decimal(apply_arithmetic_operator(operator, param1, param2)))
                     }
                     _ => Err(EvalError::new("Right hand result is not a numeric value")),
@@ -125,10 +125,7 @@ impl AssignmentApplier {
 impl Applier for AssignmentApplier {
     fn evaluate(&mut self, evaluator: &mut Evaluator, operator: &str) -> ASTResult {
         let value = mem::replace(&mut self.value, AST::None);
-        let result = evaluator.evaluate(value).unwrap_or(AST::None);
-        if result == AST::None {
-            return Ok(result);
-        }
+        let result = try!(evaluator.evaluate(value));
 
         let variable = mem::replace(&mut self.variable, AST::None);
         if let AST::Variable(name) = variable {
@@ -164,10 +161,10 @@ impl EqualityApplier {
 impl Applier for EqualityApplier {
     fn evaluate(&mut self, evaluator: &mut Evaluator, operator: &str) -> ASTResult {
         let child1 = mem::replace(&mut self.child1, AST::None);
-        let result1 = evaluator.evaluate(child1).unwrap_or(AST::None);
+        let result1 = try!(evaluator.evaluate(child1));
 
         let child2 = mem::replace(&mut self.child2, AST::None);
-        let result2 = evaluator.evaluate(child2).unwrap_or(AST::None);
+        let result2 = try!(evaluator.evaluate(child2));
 
         if operator == "==" {
             if result1.eq(&result2) {
@@ -205,13 +202,13 @@ impl Applier for BooleanApplier {
     fn evaluate(&mut self, evaluator: &mut Evaluator, operator: &str) -> ASTResult {
         let child1 = mem::replace(&mut self.child1, AST::None);
 
-        if let AST::Number(val1) = evaluator.evaluate(child1).unwrap_or(AST::None) {
+        if let AST::Number(val1) = try!(evaluator.evaluate(child1)) {
             if val1 == 0 && operator == "&&" || val1 > 0 && operator == "||" {
                 return Ok(AST::Number(val1));
             }
 
             let child2 = mem::replace(&mut self.child2, AST::None);
-            if let AST::Number(val2) = evaluator.evaluate(child2).unwrap_or(AST::None) {
+            if let AST::Number(val2) = try!(evaluator.evaluate(child2)) {
                 Ok(AST::Number(val2))
             } else {
                 Err(EvalError::new("Right hand result must be a number"))

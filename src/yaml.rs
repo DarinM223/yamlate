@@ -201,7 +201,7 @@ pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Yaml {
 #[cfg(test)]
 mod tests {
     use ast::AST;
-    use environment::{ASTEnvironment ,Environment};
+    use environment::{ASTEnvironment, Environment};
     use super::*;
     use yaml_rust::YamlLoader;
     use yaml_rust::yaml::Yaml;
