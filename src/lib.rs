@@ -1,6 +1,4 @@
-#![feature(box_patterns, box_syntax, convert, custom_attribute, plugin)]
-#![plugin(sorty)]
-#![warn(unsorted_declarations)]
+#![feature(box_patterns, box_syntax, convert, custom_attribute)]
 
 #[cfg_attr(feature="clippy", feature(plugin))]
 #[cfg_attr(feature="clippy", plugin(clippy))]
@@ -13,7 +11,6 @@ extern crate yaml_rust;
 
 mod ast;
 mod errors;
-mod evaluator;
 mod helpers;
 mod lexer;
 mod parser;

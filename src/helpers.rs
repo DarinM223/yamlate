@@ -1,11 +1,12 @@
-use ast::AST;
+use ast::{Exp, Lit, Op};
+use errors::LexError;
 use std::collections::HashMap;
 
 lazy_static! {
     static ref OPERATORS: HashMap<String, i32> = {
         let mut hash_map = HashMap::new();
         hash_map.insert("(".to_owned(), -1); // "(" ignores operator precedence
-        hash_map.insert(")".to_owned(), 8); 
+        hash_map.insert(")".to_owned(), 8);
 
         hash_map.insert("!".to_owned(), 7);
 
@@ -53,42 +54,34 @@ pub fn operator_precedence(string: &str) -> i32 {
     }
 }
 
-pub fn ast_to_operator(ast: &AST) -> String {
-    match *ast {
-        AST::Declare(_, _) => ":=",
-        AST::Assign(_, _) => "=",
-        AST::Equal(_, _) => "==",
-        AST::NotEqual(_, _) => "!=",
-        AST::Plus(_, _) => "+",
-        AST::Minus(_, _) => "-",
-        AST::Times(_, _) => "*",
-        AST::Divide(_, _) => "/",
-        AST::Modulo(_, _) => "%",
-        AST::Exponent(_, _) => "^",
-        AST::And(_, _) => "&&",
-        AST::Or(_, _) => "||", 
-        AST::Not(_) => "!",
-        _ => "",
-    }
-    .to_owned()
-}
-
-pub fn operator_to_ast(operator: &str, ast1: AST, ast2: AST) -> AST {
-    match operator {
-        "=" => AST::Assign(box ast1, box ast2),
-        ":=" => AST::Declare(box ast1, box ast2),
-        "==" => AST::Equal(box ast1, box ast2),
-        "!=" => AST::NotEqual(box ast1, box ast2),
-        "+" => AST::Plus(box ast1, box ast2),
-        "-" => AST::Minus(box ast1, box ast2),
-        "*" => AST::Times(box ast1, box ast2),
-        "/" => AST::Divide(box ast1, box ast2),
-        "%" => AST::Modulo(box ast1, box ast2),
-        "^" => AST::Exponent(box ast1, box ast2),
-        "&&" => AST::And(box ast1, box ast2),
-        "||" => AST::Or(box ast1, box ast2),
-        _ => AST::None,
-    }
+pub fn operator_to_exp(operator: &str, exp1: Exp, exp2: Exp) -> Result<Exp, LexError> {
+    Ok(match operator {
+        "==" => Exp::BinaryOp(Op::Equal, box exp1, box exp2),
+        "!=" => Exp::BinaryOp(Op::NotEqual, box exp1, box exp2),
+        "+" => Exp::BinaryOp(Op::Plus, box exp1, box exp2),
+        "-" => Exp::BinaryOp(Op::Minus, box exp1, box exp2),
+        "*" => Exp::BinaryOp(Op::Times, box exp1, box exp2),
+        "/" => Exp::BinaryOp(Op::Divide, box exp1, box exp2),
+        "%" => Exp::BinaryOp(Op::Modulo, box exp1, box exp2),
+        "^" => Exp::BinaryOp(Op::Exponent, box exp1, box exp2),
+        "&&" => Exp::BinaryOp(Op::And, box exp1, box exp2),
+        "||" => Exp::BinaryOp(Op::Or, box exp1, box exp2),
+        "=" => {
+            if let Exp::Lit(Lit::Str(name)) = exp1 {
+                Exp::Assign(name, box exp2)
+            } else {
+                return Err(LexError::new("Assign name has to be string"));
+            }
+        }
+        ":=" => {
+            if let Exp::Lit(Lit::Str(name)) = exp1 {
+                Exp::Declare(name, box exp2)
+            } else {
+                return Err(LexError::new("Declare name has to be string"));
+            }
+        }
+        _ => return Err(LexError::new("Unknown operator")),
+    })
 }
 
 pub fn is_split_character(ch: char) -> bool {

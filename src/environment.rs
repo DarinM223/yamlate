@@ -1,41 +1,41 @@
-use ast::AST;
+use ast::lit::Lit;
 use std::collections::HashMap;
 
 pub trait Environment {
-    /// gets a value from the environment
+    /// Gets a value from the environment
     /// returns the value of the variable in the most
-    /// current scope possible or None if the variable 
+    /// current scope possible or None if the variable
     /// is not in the scope
-    fn get(&self, var: &str) -> Option<&AST>;
+    fn get(&self, var: &str) -> Option<Lit>;
 
-    /// assign sets an existing value in the environment
-    /// difference between set is that set always creates a new binding in 
+    /// Sets an existing value in the environment
+    /// difference between set is that set always creates a new binding in
     /// the current scope whereas assign assigns to the most current scope
     /// of an existing variable (so it can assign to variables in previous scopes if there
     /// is no binding of a variable to the current scope)
-    fn assign(&mut self, var: &str, value: AST);
+    fn assign(&mut self, var: &str, value: Lit);
 
-    /// set sets a binding from variable name to a value in the current scope 
+    /// Sets a binding from variable name to a value in the current scope
     /// of an environment
-    fn set(&mut self, var: &str, value: AST);
+    fn set(&mut self, var: &str, value: Lit);
 
-    /// push adds a new scope to the environment
+    /// Adds a new scope to the environment
     /// used for blocks like if statements or for loops
     fn push(&mut self);
 
-    /// pop removes a scope from the environment
+    /// Removes a scope from the environment
     /// called after block ends
     fn pop(&mut self);
 
-    /// len returns the number of scopes inside the current scope is
+    /// Returns the number of scopes inside the current scope is
     fn len(&self) -> usize;
 
-    /// is_empty is true if there are no more scopes in the environment and false otherwise
+    /// Returns true if there are no more scopes in the environment and false otherwise
     fn is_empty(&self) -> bool;
 }
 
 pub struct ASTEnvironment {
-    stack: Vec<HashMap<String, AST>>,
+    stack: Vec<HashMap<String, Lit>>,
 }
 
 impl ASTEnvironment {
@@ -45,28 +45,26 @@ impl ASTEnvironment {
 }
 
 impl Environment for ASTEnvironment {
-    fn get(&self, var: &str) -> Option<&AST> {
-        let key = var.to_owned();
+    fn get(&self, var: &str) -> Option<Lit> {
         for i in (0..self.stack.len()).rev() {
-            if let Some(val) = self.stack[i].get(&key) {
-                return Some(val);
+            if let Some(val) = self.stack[i].get(var) {
+                return Some(val.clone());
             }
         }
 
         None
     }
 
-    fn assign(&mut self, var: &str, value: AST) {
-        let key = var.to_owned();
+    fn assign(&mut self, var: &str, value: Lit) {
         for i in (0..self.stack.len()).rev() {
-            if self.stack[i].contains_key(&key) {
-                *self.stack[i].get_mut(&key).unwrap() = value;
+            if self.stack[i].contains_key(var) {
+                *self.stack[i].get_mut(var).unwrap() = value;
                 return;
             }
         }
     }
 
-    fn set(&mut self, var: &str, value: AST) {
+    fn set(&mut self, var: &str, value: Lit) {
         let n = self.stack.len();
         if n > 0 {
             self.stack[n - 1].insert(var.to_owned(), value);
@@ -92,7 +90,7 @@ impl Environment for ASTEnvironment {
 
 #[cfg(test)]
 mod tests {
-    use ast::AST;
+    use ast::Lit;
     use super::{ASTEnvironment, Environment};
 
     #[test]
@@ -104,18 +102,18 @@ mod tests {
     #[test]
     fn test_bad_value_nonempty_stack() {
         let mut env = ASTEnvironment::new();
-        env.set("hello", AST::Number(2));
+        env.set("hello", Lit::Number(2));
         env.push();
-        env.set("world", AST::Number(3));
+        env.set("world", Lit::Number(3));
         assert_eq!(env.get("blah"), None);
     }
 
     #[test]
     fn test_good_value_one_stack() {
         let mut env = ASTEnvironment::new();
-        env.set("hello", AST::Number(2));
-        env.set("world", AST::Number(3));
-        assert_eq!(env.get("world"), Some(&AST::Number(3)));
+        env.set("hello", Lit::Number(2));
+        env.set("world", Lit::Number(3));
+        assert_eq!(env.get("world"), Some(Lit::Number(3)));
     }
 
     #[test]
@@ -136,33 +134,33 @@ mod tests {
     #[test]
     fn test_good_value_multiple_stacks() {
         let mut env = ASTEnvironment::new();
-        env.set("hello", AST::Number(2));
+        env.set("hello", Lit::Number(2));
         env.push();
-        env.set("world", AST::Number(3));
-        assert_eq!(env.get("hello"), Some(&AST::Number(2)));
+        env.set("world", Lit::Number(3));
+        assert_eq!(env.get("hello"), Some(Lit::Number(2)));
     }
 
     #[test]
     fn test_override_value() {
         let mut env = ASTEnvironment::new();
-        env.set("hello", AST::Number(2));
+        env.set("hello", Lit::Number(2));
         env.push();
-        env.set("hello", AST::Number(3));
+        env.set("hello", Lit::Number(3));
 
-        assert_eq!(env.get("hello"), Some(&AST::Number(3)));
+        assert_eq!(env.get("hello"), Some(Lit::Number(3)));
 
         env.pop();
-        assert_eq!(env.get("hello"), Some(&AST::Number(2)));
+        assert_eq!(env.get("hello"), Some(Lit::Number(2)));
     }
 
     #[test]
     fn test_assign_sets_value_in_other_stack() {
         let mut env = ASTEnvironment::new();
-        env.set("hello", AST::Number(2));
+        env.set("hello", Lit::Number(2));
         env.push();
-        env.assign("hello", AST::Number(3));
+        env.assign("hello", Lit::Number(3));
         env.pop();
 
-        assert_eq!(env.get("hello"), Some(&AST::Number(3)));
+        assert_eq!(env.get("hello"), Some(Lit::Number(3)));
     }
 }

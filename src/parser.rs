@@ -1,38 +1,14 @@
-use ast::AST;
+use ast::{Exp, Lit, Op};
 use errors::LexError;
-use helpers::{operator_precedence, operator_to_ast};
+use helpers::{operator_precedence, operator_to_exp};
 use std::collections::VecDeque;
-
-/// try_op_unwrap is a macro that takes in an option of a string and
-/// attempts to unwrap the option. If it can't, then the enclosing function
-/// returns an error with the second string parameter 
-macro_rules! try_op_unwrap {
-    ($a:expr, $b:expr) => (match $a {
-        Some(val) => val,
-        None => return Some(LexError::new($b)),
-    });
-}
-
-/// try_ast_unwrap is a macro that takes in an option of an AST and attempts
-/// to unwrap the option. If it can't, then the enclosing function returns
-/// an error with the second string parameter 
-macro_rules! try_ast_unwrap {
-    ($a:expr, $b:expr) => (match $a {
-        Some(val) => if val == AST::None {
-            return Some(LexError::new($b));
-        } else {
-            val
-        },
-        None => return Some(LexError::new($b)),
-    });
-}
 
 const OPERATOR_ERROR: &'static str = "Operator cannot be retrieved from the stack";
 const VARIABLE_ERROR: &'static str = "Variable cannot be retrieved from the stack";
 
 /// Parses string into AST
 pub struct Parser {
-    var_stack: VecDeque<AST>,
+    var_stack: VecDeque<Exp>,
     op_stack: VecDeque<String>,
 }
 
@@ -44,30 +20,41 @@ impl Parser {
         }
     }
 
-    /// collapse_stacks combines the current variable and operator stacks into an AST
+    /// Combines the current variable and operator stacks into an AST
     /// and pushes the result back onto the variable stack
-    fn collapse_stacks(&mut self, add_op_precedence: i32) -> Option<LexError> {
+    fn collapse_stacks(&mut self, add_op_precedence: i32) -> Result<(), LexError> {
         let mut paren_count = 0;
         while !self.op_stack.is_empty() &&
               (add_op_precedence < operator_precedence(self.op_stack.front().unwrap()) ||
                paren_count > 0) {
-            let operator = try_op_unwrap!(self.op_stack.pop_front(), OPERATOR_ERROR);
+            let operator = match self.op_stack.pop_front() {
+                Some(op) => op,
+                None => return Err(LexError::new(OPERATOR_ERROR)),
+            };
 
             match operator.as_str() {
                 ")" => paren_count += 1,
-                "(" => paren_count -= 1, 
+                "(" => paren_count -= 1,
 
                 "!" => {
-                    let var = try_ast_unwrap!(self.var_stack.pop_front(), VARIABLE_ERROR);
-                    self.var_stack.push_front(AST::Not(Box::new(var)));
+                    let var = match self.var_stack.pop_front() {
+                        Some(var) => var,
+                        None => return Err(LexError::new(VARIABLE_ERROR)),
+                    };
+                    self.var_stack.push_front(Exp::UnaryOp(Op::Not, Box::new(var)));
                 }
 
                 // Double parameter operators
                 _ => {
-                    let var1 = try_ast_unwrap!(self.var_stack.pop_front(), VARIABLE_ERROR);
-                    let var2 = try_ast_unwrap!(self.var_stack.pop_front(), VARIABLE_ERROR);
-
-                    let ast_node = operator_to_ast(operator.as_str(), var2, var1);
+                    let var1 = match self.var_stack.pop_front() {
+                        Some(var) => var,
+                        None => return Err(LexError::new(VARIABLE_ERROR)),
+                    };
+                    let var2 = match self.var_stack.pop_front() {
+                        Some(var) => var,
+                        None => return Err(LexError::new(VARIABLE_ERROR)),
+                    };
+                    let ast_node = try!(operator_to_exp(operator.as_str(), var2, var1));
 
                     self.var_stack.push_front(ast_node);
                 }
@@ -75,18 +62,18 @@ impl Parser {
         }
 
         if paren_count != 0 {
-            Some(LexError::new("Parentheses do not match"))
+            Err(LexError::new("Parentheses do not match"))
         } else {
-            None
+            Ok(())
         }
     }
 
     /// Takes in two deques for the variables and operators
     /// and returns the parsed AST value
     pub fn parse_to_ast(&mut self,
-                        variables: &mut VecDeque<AST>,
+                        variables: &mut VecDeque<Exp>,
                         operators: &mut VecDeque<String>)
-                        -> Result<AST, LexError> {
+                        -> Result<Exp, LexError> {
         while !operators.is_empty() {
             let mut lower_precedence = false;
             let mut op_precedence = -2;
@@ -108,10 +95,7 @@ impl Parser {
             }
 
             if lower_precedence {
-                let collapse_result = self.collapse_stacks(op_precedence);
-                if let Some(err) = collapse_result {
-                    return Err(err);
-                }
+                try!(self.collapse_stacks(op_precedence));
             }
 
             if !variables.is_empty() && operator != "(" && operator != ")" {
@@ -127,16 +111,15 @@ impl Parser {
         }
 
         if !self.op_stack.is_empty() {
-            let collapse_result = self.collapse_stacks(-2);
-            if let Some(err) = collapse_result {
-                return Err(err);
-            }
+            try!(self.collapse_stacks(-2));
         }
 
         if self.var_stack.len() > 1 {
             Err(LexError::new("Expression could not be completely evaluated"))
+        } else if self.var_stack.len() == 1 {
+            Ok(self.var_stack.pop_front().unwrap())
         } else {
-            Ok(self.var_stack.pop_front().unwrap_or(AST::None))
+            Err(LexError::new("Expression does not result in a value"))
         }
     }
 }

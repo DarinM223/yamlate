@@ -16,9 +16,6 @@ num = "*"
 libc = "*"
 clippy = { version = "*", optional = true }
 
-[dependencies.sorty]
-git = "https://github.com/Wafflespeanut/rust-sorty"
-
 [features]
 default = []
 

@@ -36,13 +36,23 @@ pub extern "C" fn yaml_destroy(yaml: *const Yaml) {
 }
 
 #[no_mangle]
-pub extern "C" fn yaml_evaluate(yaml: *const Yaml, env: *mut ASTEnvironment) -> *const Yaml {
+pub extern "C" fn yaml_evaluate(yaml: *const Yaml,
+                                env: *mut ASTEnvironment)
+                                -> FFIReturnValue<*const Yaml> {
     let yaml = unsafe { &*yaml };
     let environment = unsafe { &mut *env };
 
-    let result: Yaml = evaluate(yaml, environment);
-
-    unsafe { transmute::<Box<Yaml>, *const Yaml>(box result) }
+    if let Ok(result) = evaluate(yaml, environment) {
+        FFIReturnValue {
+            value: unsafe { transmute::<Box<Yaml>, *const Yaml>(box result) },
+            error: Error::None as i32,
+        }
+    } else {
+        FFIReturnValue {
+            value: 0 as *const Yaml,
+            error: Error::EvalError as i32,
+        }
+    }
 }
 
 #[no_mangle]

@@ -1,4 +1,4 @@
-use ast::AST;
+use ast::{Exp, Lit, Op};
 use errors::LexError;
 use helpers::is_operator;
 use lexer::{LexerState, WordState};
@@ -80,10 +80,14 @@ impl TokenBuilder for OperatorBuilder {
             WordState::Decimal => {
                 let curr_str = state.emit_string();
                 let ast_node = match state.curr_state {
-                    WordState::Variable => AST::Variable(curr_str),
-                    WordState::Number => AST::Number(curr_str.as_str().parse().unwrap_or(0)),
-                    WordState::Decimal => AST::Decimal(curr_str.as_str().parse().unwrap_or(0.0)),
-                    _ => AST::None,
+                    WordState::Variable => Exp::Variable(curr_str),
+                    WordState::Number => {
+                        Exp::Lit(Lit::Number(curr_str.as_str().parse().unwrap_or(0)))
+                    }
+                    WordState::Decimal => {
+                        Exp::Lit(Lit::Decimal(curr_str.as_str().parse().unwrap_or(0.0)))
+                    }
+                    _ => return Err(LexError::new("Invalid word state")),
                 };
 
                 state.variables.push_front(ast_node);
@@ -120,7 +124,7 @@ impl TokenBuilder for QuoteBuilder {
         match state.curr_state {
             WordState::String => {
                 let curr_str = state.emit_string();
-                state.variables.push_front(AST::String(curr_str));
+                state.variables.push_front(Exp::Lit(Lit::Str(curr_str)));
                 state.curr_state = WordState::None;
             }
 

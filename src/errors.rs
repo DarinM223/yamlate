@@ -28,6 +28,12 @@ impl Error for LexError {
     }
 }
 
+impl From<EvalError> for LexError {
+    fn from(e: EvalError) -> LexError {
+        LexError::new(&e.desc[..])
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct EvalError {
     desc: String,
@@ -52,5 +58,11 @@ impl Error for EvalError {
 
     fn cause(&self) -> Option<&Error> {
         None
+    }
+}
+
+impl From<LexError> for EvalError {
+    fn from(e: LexError) -> EvalError {
+        EvalError::new(&e.desc[..])
     }
 }

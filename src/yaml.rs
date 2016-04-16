@@ -1,6 +1,6 @@
-use ast::AST;
+use ast::{Exp, Lit};
 use environment::Environment;
-use evaluator::Evaluator;
+use errors::EvalError;
 use lexer::Lexer;
 use parser::Parser;
 use std::collections::BTreeMap;
@@ -16,13 +16,13 @@ pub enum YamlType {
 fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
                                prop_str: &str,
                                env: &mut Environment)
-                               -> YamlType {
+                               -> Result<YamlType, EvalError> {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
             if keyword.as_str() == "do" {
                 loop {
                     // check proposition if true
-                    let result = evaluate_helper(&Yaml::String(prop_str.to_owned()), env);
+                    let result = try!(evaluate_helper(&Yaml::String(prop_str.to_owned()), env));
                     if let YamlType::Value(Yaml::Integer(i)) = result {
                         if i <= 0 {
                             break;
@@ -32,7 +32,7 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
                     env.push();
 
                     // evaluate commands inside do block
-                    evaluate_helper(val, env);
+                    try!(evaluate_helper(val, env));
 
                     env.pop();
                 }
@@ -40,7 +40,7 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
         }
     }
 
-    YamlType::Value(Yaml::Hash(h.clone()))
+    Ok(YamlType::Value(Yaml::Hash(h.clone())))
 }
 
 // same as apply_keywords but only works on nested keywords in if statements
@@ -48,19 +48,19 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
 fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
                             prop_str: &str,
                             env: &mut Environment)
-                            -> YamlType {
+                            -> Result<YamlType, EvalError> {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
-            let result = evaluate_helper(&Yaml::String(prop_str.to_owned()), env);
+            let result = try!(evaluate_helper(&Yaml::String(prop_str.to_owned()), env));
 
             match keyword.as_str() {
                 "do" => {
                     if let YamlType::Value(Yaml::Integer(i)) = result {
                         if i > 0 {
                             env.push();
-                            let result = evaluate_helper(val, env);
+                            let result = try!(evaluate_helper(val, env));
                             env.pop();
-                            return result;
+                            return Ok(result);
                         }
                     }
                 }
@@ -68,9 +68,9 @@ fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
                     if let YamlType::Value(Yaml::Integer(i)) = result {
                         if i == 0 {
                             env.push();
-                            let result = evaluate_helper(val, env);
+                            let result = try!(evaluate_helper(val, env));
                             env.pop();
-                            return result;
+                            return Ok(result);
                         }
                     }
                 }
@@ -79,11 +79,15 @@ fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
         }
     }
 
-    YamlType::Value(Yaml::Hash(h.clone()))
+    Ok(YamlType::Value(Yaml::Hash(h.clone())))
 }
 
 // applies the effects of keywords in a YAML hash
-fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut Environment) -> YamlType {
+fn apply_keyword(s: &str,
+                 k: &Yaml,
+                 v: &Yaml,
+                 env: &mut Environment)
+                 -> Result<YamlType, EvalError> {
     match s {
         "while" | "if" => {
             if let Yaml::Array(ref arr) = *v {
@@ -121,59 +125,58 @@ fn apply_keyword(s: &str, k: &Yaml, v: &Yaml, env: &mut Environment) -> YamlType
             }
         }
         "return" => {
-            let result = evaluate_helper(&v, env);
+            let result = try!(evaluate_helper(&v, env));
             if let YamlType::Value(val) = result {
-                return YamlType::Return(val);
+                return Ok(YamlType::Return(val));
             }
-            return result;
+            return Ok(result);
         }
         _ => {}
     }
 
-    YamlType::Value(v.clone())
+    Ok(YamlType::Value(v.clone()))
 }
 
 // evaluates the result of a fragment of YAML
-fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> YamlType {
+fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> Result<YamlType, EvalError> {
     match *yaml {
         Yaml::String(ref s) => {
             if s.as_str().contains("~>") {
                 let split_vec = s.as_str().split("~>").collect::<Vec<_>>();
-                let mut evaluator = Evaluator::new(env);
                 let mut parser = Parser::new();
 
                 let mut lexer = Lexer::new();
                 lexer.parse_string(split_vec[1]);
-                let ast = parser.parse_to_ast(&mut lexer.state.variables,
-                                              &mut lexer.state.operators)
-                                .unwrap_or(AST::None);
-                let result = evaluator.evaluate(ast).unwrap_or(AST::None);
+                let ast = try!(parser.parse_to_ast(&mut lexer.state.variables,
+                                                   &mut lexer.state.operators));
+                let result = try!(ast.eval(env));
 
-                YamlType::Value(match result {
-                    AST::Decimal(d) => Yaml::Real(d.to_string()),
-                    AST::Number(n) => Yaml::Integer(n as i64),
-                    AST::String(s) => Yaml::String(s),
+                Ok(YamlType::Value(match result {
+                    Exp::Lit(Lit::Decimal(d)) => Yaml::Real(d.to_string()),
+                    Exp::Lit(Lit::Number(n)) => Yaml::Integer(n as i64),
+                    Exp::Lit(Lit::Bool(b)) => Yaml::Boolean(b),
+                    Exp::Lit(Lit::Str(s)) => Yaml::String(s),
                     _ => Yaml::String(split_vec[1].to_owned()),
-                })
+                }))
             } else {
-                YamlType::Value(Yaml::String(s.clone()))
+                Ok(YamlType::Value(Yaml::String(s.clone())))
             }
         }
         Yaml::Array(ref arr) => {
             let mut last_value: Option<Yaml> = None;
             for v in arr {
-                let result = evaluate_helper(v, env);
+                let result = try!(evaluate_helper(v, env));
                 if let YamlType::Return(val) = result {
-                    return YamlType::Return(val);
+                    return Ok(YamlType::Return(val));
                 } else if let YamlType::Value(val) = result {
                     last_value = Some(val);
                 }
             }
 
             if let Some(val) = last_value {
-                YamlType::Value(val)
+                Ok(YamlType::Value(val))
             } else {
-                YamlType::Value(Yaml::Array(arr.clone()))
+                Ok(YamlType::Value(Yaml::Array(arr.clone())))
             }
         }
         Yaml::Hash(ref h) => {
@@ -182,20 +185,20 @@ fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> YamlType {
                     return apply_keyword(s.as_str(), k, v, env);
                 }
             }
-            YamlType::Value(Yaml::Hash(h.clone()))
+            Ok(YamlType::Value(Yaml::Hash(h.clone())))
         }
-        ref val @ _ => YamlType::Value(val.clone()),
+        ref val @ _ => Ok(YamlType::Value(val.clone())),
     }
 }
 
 // Main function for evaluating YAML
-pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Yaml {
-    let result = evaluate_helper(yaml, env);
+pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Result<Yaml, EvalError> {
+    let result = try!(evaluate_helper(yaml, env));
 
-    match result {
+    Ok(match result {
         YamlType::Value(v) => v,
         YamlType::Return(v) => v,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -211,7 +214,6 @@ mod tests {
     #[rustfmt_skip]
     fn test_yaml_eval() {
         // Test if evaluating "foo" returns 15
-    
         let s = "
         foo:
           - '~> a := 2'
@@ -221,13 +223,12 @@ mod tests {
               - '~> a = 3'
           - return: '~> a * (2 + 3)'
         ";
-    
+
         let mut env = ASTEnvironment::new();
         env.set("a", AST::Number(1));
         env.set("b", AST::Number(2));
-    
+
         let docs = YamlLoader::load_from_str(s).unwrap();
-    
         assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(15));
     }
 
@@ -236,7 +237,6 @@ mod tests {
     #[rustfmt_skip]
     fn test_yaml_else() {
         // Test if evaluating "foo" returns 20
-    
         let s = "
         foo:
           - '~> a := 2'
@@ -248,13 +248,10 @@ mod tests {
                 - '~> a = 4'
           - return: '~> a * (2 + 3)'
         ";
-    
         let mut env = ASTEnvironment::new();
         env.set("a", AST::Number(1));
         env.set("b", AST::Number(2));
-    
         let docs = YamlLoader::load_from_str(s).unwrap();
-    
         assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(20));
     }
 
@@ -263,7 +260,6 @@ mod tests {
     #[rustfmt_skip]
     fn test_return() {
         // Test that return doesn't execute statements after it
-    
         let s = "
         foo:
           - return: '~> 2 * (2 + 3)'
@@ -273,15 +269,11 @@ mod tests {
             - do:
               - '~> a = 3'
         ";
-    
         let mut env = ASTEnvironment::new();
         env.set("a", AST::Number(1));
         env.set("b", AST::Number(2));
-    
         let docs = YamlLoader::load_from_str(s).unwrap();
-    
         assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
-    
         assert_eq!(env.get("a"), Some(&AST::Number(1)));
     }
 
@@ -290,7 +282,6 @@ mod tests {
     #[rustfmt_skip]
     fn test_return_last_val() {
         // Test that the last value is returned as value instead of return
-    
         let s = "
         foo:
           - '~> a := 2'
@@ -300,13 +291,10 @@ mod tests {
               - '~> a = 3'
           - '~> 2 * (2 + 3)'
         ";
-    
         let mut env = ASTEnvironment::new();
         env.set("a", AST::Number(1));
         env.set("b", AST::Number(2));
-    
         let docs = YamlLoader::load_from_str(s).unwrap();
-    
         assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
     }
 
@@ -315,7 +303,6 @@ mod tests {
     #[rustfmt_skip]
     fn test_local_variable() {
         // Test that local variable is destroyed after if
-    
         let s = "
         foo:
           - '~> a := 2'
@@ -326,15 +313,11 @@ mod tests {
               - '~> a := 3'
           - '~> a * (2 + 3)'
         ";
-    
         let mut env = ASTEnvironment::new();
         env.set("a", AST::Number(1));
         env.set("b", AST::Number(2));
-    
         let docs = YamlLoader::load_from_str(s).unwrap();
-    
         assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
-    
         assert_eq!(env.get("c"), None);
     }
 
@@ -351,13 +334,9 @@ mod tests {
               - '~> a = a + 1'
           - '~> a'
         ";
-    
         let mut env = ASTEnvironment::new();
-    
         let docs = YamlLoader::load_from_str(s).unwrap();
-    
         assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(5));
-    
         assert_eq!(env.get("a"), Some(&AST::Number(5)));
     }
 }

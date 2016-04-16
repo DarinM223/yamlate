@@ -1,6 +1,6 @@
 mod token_builder;
 
-use ast::AST;
+use ast::{Exp, Lit};
 use errors::LexError;
 use lexer::token_builder::append_ch;
 use std::collections::VecDeque;
@@ -16,7 +16,7 @@ pub enum WordState {
 }
 
 pub struct LexerState {
-    pub variables: VecDeque<AST>,
+    pub variables: VecDeque<Exp>,
     pub operators: VecDeque<String>,
     pub curr_state: WordState,
     pub curr_chars: Vec<char>,
@@ -32,7 +32,7 @@ impl LexerState {
         }
     }
 
-    /// emit_string clears all of the current characters in the state
+    /// Clears all of the current characters in the state
     /// and returns the string representation of the character array
     pub fn emit_string(&mut self) -> String {
         let curr_str = self.curr_chars.iter().cloned().collect::<String>();
@@ -52,10 +52,10 @@ impl Lexer {
         Lexer { state: LexerState::new() }
     }
 
-    /// parse_string parses the contents of the string and adds the
+    /// Parses the contents of the string and adds the
     /// tokens to the lexer. You can retrieve the tokenized
     /// operators through self.state.operators, and the tokenized
-    /// AST constants/variables through self.state.variables
+    /// Exp constants/variables through self.state.variables
     pub fn parse_string(&mut self, s: &str) -> Result<(), LexError> {
         for ch in s.to_owned().chars() {
             if ch == ' ' || ch == '\t' {
@@ -75,11 +75,15 @@ impl Lexer {
                 self.state.operators.push_front(curr_str);
             } else if self.state.curr_state != WordState::None {
                 let ast_node = match self.state.curr_state {
-                    WordState::Variable => AST::Variable(curr_str),
-                    WordState::Number => AST::Number(curr_str.as_str().parse().unwrap_or(0)),
-                    WordState::Decimal => AST::Decimal(curr_str.as_str().parse().unwrap_or(0.0)),
-                    WordState::String => AST::String(curr_str),
-                    _ => AST::None,
+                    WordState::Variable => Exp::Variable(curr_str),
+                    WordState::Number => {
+                        Exp::Lit(Lit::Number(curr_str.as_str().parse().unwrap_or(0)))
+                    }
+                    WordState::Decimal => {
+                        Exp::Lit(Lit::Decimal(curr_str.as_str().parse().unwrap_or(0.0)))
+                    }
+                    WordState::String => Exp::Lit(Lit::Str(curr_str)),
+                    _ => return Err(LexError::new("Invalid word state")),
                 };
 
                 self.state.variables.push_front(ast_node);

@@ -5,6 +5,7 @@ pub enum Error {
     WrongType = -1,
     NotDefined = -2,
     InvalidString = -3,
+    EvalError = -4,
 }
 
 /// Represents the return value of a FFI function
