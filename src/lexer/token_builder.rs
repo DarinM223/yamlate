@@ -1,4 +1,4 @@
-use ast::{Exp, Lit, Op};
+use ast::{Exp, Lit};
 use errors::LexError;
 use helpers::is_operator;
 use lexer::{LexerState, WordState};

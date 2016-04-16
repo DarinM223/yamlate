@@ -1,4 +1,4 @@
-use ast::{Exp, Lit, Op};
+use ast::{Exp, Op};
 use errors::LexError;
 use helpers::{operator_precedence, operator_to_exp};
 use std::collections::VecDeque;
@@ -174,27 +174,6 @@ mod tests {
         let mut variables = VecDeque::new();
         let mut operators = VecDeque::new();
 
-        variables.push_front(Exp::Lit(Lit::Number(1)));
-
-        operators.push_front("+".to_owned());
-
-        let result = parser.parse_to_ast(&mut variables, &mut operators);
-
-        assert_eq!(result,
-                   Err(LexError::new("Variable cannot be retrieved from the stack")));
-    }
-
-    #[test]
-    fn test_parse_error_left() {
-        // test ast generation for `+ 1`
-        // should return error
-
-        let mut parser = Parser::new();
-
-        let mut variables = VecDeque::new();
-        let mut operators = VecDeque::new();
-
-        variables.push_front(Exp::Lit(Lit::Nil));
         variables.push_front(Exp::Lit(Lit::Number(1)));
 
         operators.push_front("+".to_owned());

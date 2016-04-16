@@ -23,10 +23,8 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
                 loop {
                     // check proposition if true
                     let result = try!(evaluate_helper(&Yaml::String(prop_str.to_owned()), env));
-                    if let YamlType::Value(Yaml::Integer(i)) = result {
-                        if i <= 0 {
-                            break;
-                        }
+                    if result == YamlType::Value(Yaml::Boolean(false)) {
+                        break;
                     }
 
                     env.push();
@@ -55,23 +53,19 @@ fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
 
             match keyword.as_str() {
                 "do" => {
-                    if let YamlType::Value(Yaml::Integer(i)) = result {
-                        if i > 0 {
-                            env.push();
-                            let result = try!(evaluate_helper(val, env));
-                            env.pop();
-                            return Ok(result);
-                        }
+                    if result == YamlType::Value(Yaml::Boolean(true)) {
+                        env.push();
+                        let result = try!(evaluate_helper(val, env));
+                        env.pop();
+                        return Ok(result);
                     }
                 }
                 "else" => {
-                    if let YamlType::Value(Yaml::Integer(i)) = result {
-                        if i == 0 {
-                            env.push();
-                            let result = try!(evaluate_helper(val, env));
-                            env.pop();
-                            return Ok(result);
-                        }
+                    if result == YamlType::Value(Yaml::Boolean(false)) {
+                        env.push();
+                        let result = try!(evaluate_helper(val, env));
+                        env.pop();
+                        return Ok(result);
                     }
                 }
                 _ => {}
@@ -146,7 +140,7 @@ fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> Result<YamlType, EvalE
                 let mut parser = Parser::new();
 
                 let mut lexer = Lexer::new();
-                lexer.parse_string(split_vec[1]);
+                try!(lexer.parse_string(split_vec[1]));
                 let ast = try!(parser.parse_to_ast(&mut lexer.state.variables,
                                                    &mut lexer.state.operators));
                 let result = try!(ast.eval(env));
@@ -203,7 +197,7 @@ pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Result<Yaml, EvalError> {
 
 #[cfg(test)]
 mod tests {
-    use ast::{Exp, Lit};
+    use ast::Lit;
     use environment::{ASTEnvironment, Environment};
     use super::*;
     use yaml_rust::YamlLoader;

@@ -1,4 +1,4 @@
-use ast::{Exp, Lit, Op};
+use ast::{Exp, Op};
 use errors::LexError;
 use std::collections::HashMap;
 
@@ -67,14 +67,14 @@ pub fn operator_to_exp(operator: &str, exp1: Exp, exp2: Exp) -> Result<Exp, LexE
         "&&" => Exp::BinaryOp(Op::And, box exp1, box exp2),
         "||" => Exp::BinaryOp(Op::Or, box exp1, box exp2),
         "=" => {
-            if let Exp::Lit(Lit::Str(name)) = exp1 {
+            if let Exp::Variable(name) = exp1 {
                 Exp::Assign(name, box exp2)
             } else {
                 return Err(LexError::new("Assign name has to be string"));
             }
         }
         ":=" => {
-            if let Exp::Lit(Lit::Str(name)) = exp1 {
+            if let Exp::Variable(name) = exp1 {
                 Exp::Declare(name, box exp2)
             } else {
                 return Err(LexError::new("Declare name has to be string"));
