@@ -94,7 +94,7 @@ impl Exp {
 #[cfg(test)]
 mod tests {
     use environment::{ASTEnvironment, Environment};
-    use self::*;
+    use ast::{Exp, Lit, Op};
 
     #[test]
     fn test_arith_ast() {
@@ -111,13 +111,13 @@ mod tests {
         let mut env = ASTEnvironment::new();
 
         let ast = Exp::BinaryOp(Op::Times,
-                                box Lit::Number(5),
+                                box Exp::Lit(Lit::Number(5)),
                                 box Exp::BinaryOp(Op::Plus,
                                                   box Exp::BinaryOp(Op::Minus,
-                                                                    box Lit::Number(3),
-                                                                    box Lit::Number(2)),
-                                                  box Lit::Number(6)));
-        assert_eq!(ast.eval(env), Ok(Exp::Lit(Lit::Number(35))));
+                                                                    box Exp::Lit(Lit::Number(3)),
+                                                                    box Exp::Lit(Lit::Number(2))),
+                                                  box Exp::Lit(Lit::Number(6))));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Number(35))));
     }
 
     #[test]
@@ -133,20 +133,20 @@ mod tests {
         // is "35" when a is 5, b is 3, c is 2, and d is 6
 
         let mut env = ASTEnvironment::new();
-        env.set("a", AST::Number(5));
-        env.set("b", AST::Number(3));
-        env.set("c", AST::Number(2));
-        env.set("d", AST::Number(6));
+        env.set("a", Lit::Number(5));
+        env.set("b", Lit::Number(3));
+        env.set("c", Lit::Number(2));
+        env.set("d", Lit::Number(6));
 
-        let mut evaluator = Evaluator::new(&mut env);
+        let (a, b, c, d) = ("a".to_owned(),
+                            "b".to_owned(),
+                            "c".to_owned(),
+                            "d".to_owned());
+        let sub_tree = Exp::BinaryOp(Op::Minus, box Exp::Variable(b), box Exp::Variable(c));
+        let add_tree = Exp::BinaryOp(Op::Plus, box sub_tree, box Exp::Variable(d));
+        let times_tree = Exp::BinaryOp(Op::Times, box Exp::Variable(a), box add_tree);
 
-        let ast = AST::Times(box AST::Variable("a".to_owned()),
-                             box AST::Plus(box AST::Minus(box AST::Variable("b".to_owned()),
-                                                          box AST::Variable("c".to_owned())),
-                                           box AST::Variable("d".to_owned())));
-        let result = evaluator.evaluate(ast);
-
-        assert_eq!(result, Ok(AST::Number(35)));
+        assert_eq!(times_tree.eval(&mut env), Ok(Exp::Lit(Lit::Number(35))));
     }
 
     #[test]
@@ -162,19 +162,19 @@ mod tests {
         // is "27.5" when a is 5, b is 2, and c is 6
 
         let mut env = ASTEnvironment::new();
-        env.set("a", AST::Number(5));
-        env.set("b", AST::Number(2));
-        env.set("c", AST::Number(6));
+        env.set("a", Lit::Number(5));
+        env.set("b", Lit::Number(2));
+        env.set("c", Lit::Number(6));
 
-        let mut evaluator = Evaluator::new(&mut env);
+        let (a, b, c) = ("a".to_owned(), "b".to_owned(), "c".to_owned());
 
-        let ast = AST::Times(box AST::Variable("a".to_owned()),
-                             box AST::Plus(box AST::Minus(box AST::Decimal(1.5),
-                                                          box AST::Variable("b".to_owned())),
-                                           box AST::Variable("c".to_owned())));
-        let result = evaluator.evaluate(ast);
+        let sub_tree = Exp::BinaryOp(Op::Minus,
+                                     box Exp::Lit(Lit::Decimal(1.5)),
+                                     box Exp::Variable(b));
+        let add_tree = Exp::BinaryOp(Op::Plus, box sub_tree, box Exp::Variable(c));
+        let times_tree = Exp::BinaryOp(Op::Times, box Exp::Variable(a), box add_tree);
 
-        assert_eq!(result, Ok(AST::Decimal(27.5)));
+        assert_eq!(times_tree.eval(&mut env), Ok(Exp::Lit(Lit::Decimal(27.5))));
     }
 
     #[test]
@@ -197,97 +197,96 @@ mod tests {
         // results in x being set to 3 in the original scope
 
         let mut env = ASTEnvironment::new();
-        let mut evaluator = Evaluator::new(&mut env);
-        let ast = AST::Declare(box AST::Variable("x".to_owned()),
-                               box AST::Times(box AST::Number(10),
-                                              box AST::Plus(box AST::Number(2),
-                                                            box AST::Number(3))));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(50)));
-        assert_eq!(evaluator.env.get("x"), Some(&AST::Number(50)));
+        let add_tree = Exp::BinaryOp(Op::Plus,
+                                     box Exp::Lit(Lit::Number(2)),
+                                     box Exp::Lit(Lit::Number(3)));
+        let times_tree = Exp::BinaryOp(Op::Times, box Exp::Lit(Lit::Number(10)), box add_tree);
+        let declare_tree = Exp::Declare("x".to_owned(), box times_tree);
 
-        evaluator.env.push();
+        assert_eq!(declare_tree.eval(&mut env), Ok(Exp::Lit(Lit::Number(50))));
+        assert_eq!(env.get("x"), Some(Lit::Number(50)));
 
-        let ast = AST::Assign(box AST::Variable("x".to_owned()),
-                              box AST::Plus(box AST::Number(1), box AST::Number(2)));
+        env.push();
 
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(3)));
+        let add_tree = Exp::BinaryOp(Op::Plus,
+                                     box Exp::Lit(Lit::Number(1)),
+                                     box Exp::Lit(Lit::Number(2)));
+        let assign_tree = Exp::Assign("x".to_owned(), box add_tree);
 
-        evaluator.env.pop();
-        assert_eq!(evaluator.env.get("x"), Some(&AST::Number(3)));
+        assert_eq!(assign_tree.eval(&mut env), Ok(Exp::Lit(Lit::Number(3))));
+
+        env.pop();
+        assert_eq!(env.get("x"), Some(Lit::Number(3)));
     }
 
     #[test]
     fn test_equality() {
         let mut env = ASTEnvironment::new();
-        let mut evaluator = Evaluator::new(&mut env);
 
         // Test number equality
 
-        let ast = AST::Equal(box AST::Number(5), box AST::Number(5));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(1)));
+        let ast = Exp::BinaryOp(Op::Equal,
+                                box Exp::Lit(Lit::Number(5)),
+                                box Exp::Lit(Lit::Number(5)));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(true))));
 
-        let ast = AST::Equal(box AST::Number(5), box AST::Number(4));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(0)));
+        let ast = Exp::BinaryOp(Op::Equal,
+                                box Exp::Lit(Lit::Number(5)),
+                                box Exp::Lit(Lit::Number(4)));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(false))));
 
         // Test decimal equality
 
-        let ast = AST::Equal(box AST::Decimal(2.56), box AST::Decimal(2.56));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(1)));
+        let ast = Exp::BinaryOp(Op::Equal,
+                                box Exp::Lit(Lit::Decimal(2.56)),
+                                box Exp::Lit(Lit::Decimal(2.56)));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(true))));
 
-        let ast = AST::Equal(box AST::Decimal(2.56), box AST::Decimal(2.55));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(0)));
+        let ast = Exp::BinaryOp(Op::Equal,
+                                box Exp::Lit(Lit::Decimal(2.56)),
+                                box Exp::Lit(Lit::Decimal(2.55)));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(false))));
 
         // Test string equality
 
-        let ast = AST::Equal(box AST::String("Hello".to_owned()),
-                             box AST::String("Hello".to_owned()));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(1)));
+        let ast = Exp::BinaryOp(Op::Equal,
+                                box Exp::Lit(Lit::Str("Hello".to_owned())),
+                                box Exp::Lit(Lit::Str("Hello".to_owned())));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(true))));
 
-        let ast = AST::Equal(box AST::String("Hello".to_owned()),
-                             box AST::String("hello".to_owned()));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(0)));
+        let ast = Exp::BinaryOp(Op::Equal,
+                                box Exp::Lit(Lit::Str("Hello".to_owned())),
+                                box Exp::Lit(Lit::Str("hello".to_owned())));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(false))));
     }
 
 
     #[test]
     fn test_boolean_operators() {
         let mut env = ASTEnvironment::new();
-        let mut evaluator = Evaluator::new(&mut env);
 
         // Test and operator
 
-        let ast = AST::And(box AST::Number(1), box AST::Number(0));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(0)));
+        let ast = Exp::BinaryOp(Op::And,
+                                box Exp::Lit(Lit::Bool(true)),
+                                box Exp::Lit(Lit::Bool(true)));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(true))));
 
-        let ast = AST::And(box AST::Number(0), box AST::Number(5));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(0)));
-
-        let ast = AST::And(box AST::Number(3), box AST::Number(5));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(5)));
+        let ast = Exp::BinaryOp(Op::And,
+                                box Exp::Lit(Lit::Bool(true)),
+                                box Exp::Lit(Lit::Bool(false)));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(false))));
 
         // Test or operator
 
-        let ast = AST::Or(box AST::Number(5), box AST::Number(1));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(5)));
+        let ast = Exp::BinaryOp(Op::Or,
+                                box Exp::Lit(Lit::Bool(true)),
+                                box Exp::Lit(Lit::Bool(false)));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(true))));
 
-        let ast = AST::Or(box AST::Number(0), box AST::Number(3));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(3)));
-
-        let ast = AST::Or(box AST::Number(0), box AST::Number(0));
-        let result = evaluator.evaluate(ast);
-        assert_eq!(result, Ok(AST::Number(0)));
+        let ast = Exp::BinaryOp(Op::Or,
+                                box Exp::Lit(Lit::Bool(false)),
+                                box Exp::Lit(Lit::Bool(false)));
+        assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(false))));
     }
 }

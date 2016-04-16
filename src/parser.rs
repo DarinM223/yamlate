@@ -126,7 +126,7 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
-    use ast::AST;
+    use ast::{Exp, Lit, Op};
     use errors::LexError;
     use std::collections::VecDeque;
     use super::*;
@@ -143,21 +143,23 @@ mod tests {
 
         let mut parser = Parser::new();
 
-        parser.var_stack.push_front(AST::Number(1));
-        parser.var_stack.push_front(AST::Number(2));
-        parser.var_stack.push_front(AST::Number(3));
+        parser.var_stack.push_front(Exp::Lit(Lit::Number(1)));
+        parser.var_stack.push_front(Exp::Lit(Lit::Number(2)));
+        parser.var_stack.push_front(Exp::Lit(Lit::Number(3)));
 
         parser.op_stack.push_front("*".to_owned());
         parser.op_stack.push_front("(".to_owned());
         parser.op_stack.push_front("+".to_owned());
         parser.op_stack.push_front(")".to_owned());
 
-        assert_eq!(parser.collapse_stacks(-2), None);
-
+        assert_eq!(parser.collapse_stacks(-2), Ok(()));
         assert_eq!(parser.var_stack.len(), 1);
 
-        let expected_val = Some(AST::Times(box AST::Number(1),
-                                           box AST::Plus(box AST::Number(2), box AST::Number(3))));
+        let expected_val = Some(Exp::BinaryOp(Op::Times,
+                                              box Exp::Lit(Lit::Number(1)),
+                                              box Exp::BinaryOp(Op::Plus,
+                                                                box Exp::Lit(Lit::Number(2)),
+                                                                box Exp::Lit(Lit::Number(3)))));
 
         assert_eq!(parser.var_stack.pop_front(), expected_val);
     }
@@ -172,7 +174,7 @@ mod tests {
         let mut variables = VecDeque::new();
         let mut operators = VecDeque::new();
 
-        variables.push_front(AST::Number(1));
+        variables.push_front(Exp::Lit(Lit::Number(1)));
 
         operators.push_front("+".to_owned());
 
@@ -192,8 +194,8 @@ mod tests {
         let mut variables = VecDeque::new();
         let mut operators = VecDeque::new();
 
-        variables.push_front(AST::None);
-        variables.push_front(AST::Number(1));
+        variables.push_front(Exp::Lit(Lit::Nil));
+        variables.push_front(Exp::Lit(Lit::Number(1)));
 
         operators.push_front("+".to_owned());
 
@@ -213,8 +215,8 @@ mod tests {
         let mut variables = VecDeque::new();
         let mut operators = VecDeque::new();
 
-        variables.push_front(AST::Number(1));
-        variables.push_front(AST::Number(2));
+        variables.push_front(Exp::Lit(Lit::Number(1)));
+        variables.push_front(Exp::Lit(Lit::Number(2)));
 
         let result = parser.parse_to_ast(&mut variables, &mut operators);
         assert_eq!(result,
@@ -240,11 +242,11 @@ mod tests {
         let mut variables = VecDeque::new();
         let mut operators = VecDeque::new();
 
-        variables.push_front(AST::Number(1));
-        variables.push_front(AST::Number(5));
-        variables.push_front(AST::Number(2));
-        variables.push_front(AST::Number(6));
-        variables.push_front(AST::Number(2));
+        variables.push_front(Exp::Lit(Lit::Number(1)));
+        variables.push_front(Exp::Lit(Lit::Number(5)));
+        variables.push_front(Exp::Lit(Lit::Number(2)));
+        variables.push_front(Exp::Lit(Lit::Number(6)));
+        variables.push_front(Exp::Lit(Lit::Number(2)));
 
         operators.push_front("+".to_owned());
         operators.push_front("!".to_owned());
@@ -256,14 +258,15 @@ mod tests {
 
         let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-        let expected_val =
-            Ok(AST::Plus(box AST::Number(1),
-                         box AST::Times(box AST::Exponent(box AST::Not(box AST::Number(5)),
-                                                          box AST::And(box AST::Number(2),
-                                                                       box AST::Number(6))),
-                                        box AST::Number(2))));
+        let not_tree = Exp::UnaryOp(Op::Not, box Exp::Lit(Lit::Number(5)));
+        let and_tree = Exp::BinaryOp(Op::And,
+                                     box Exp::Lit(Lit::Number(2)),
+                                     box Exp::Lit(Lit::Number(6)));
+        let pow_tree = Exp::BinaryOp(Op::Exponent, box not_tree, box and_tree);
+        let times_tree = Exp::BinaryOp(Op::Times, box pow_tree, box Exp::Lit(Lit::Number(2)));
+        let expected_val = Exp::BinaryOp(Op::Plus, box Exp::Lit(Lit::Number(1)), box times_tree);
 
-        assert_eq!(result, expected_val);
+        assert_eq!(result, Ok(expected_val));
     }
 
     #[test]
@@ -279,14 +282,16 @@ mod tests {
         let mut variables = VecDeque::new();
         let mut operators = VecDeque::new();
 
-        variables.push_front(AST::Number(1));
-        variables.push_front(AST::Number(2));
+        variables.push_front(Exp::Lit(Lit::Number(1)));
+        variables.push_front(Exp::Lit(Lit::Number(2)));
 
         operators.push_front("+".to_owned());
 
         let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-        let expected_val = Ok(AST::Plus(box AST::Number(1), box AST::Number(2)));
+        let expected_val = Ok(Exp::BinaryOp(Op::Plus,
+                                            box Exp::Lit(Lit::Number(1)),
+                                            box Exp::Lit(Lit::Number(2))));
 
         assert_eq!(result, expected_val);
     }

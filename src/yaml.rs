@@ -203,7 +203,7 @@ pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Result<Yaml, EvalError> {
 
 #[cfg(test)]
 mod tests {
-    use ast::AST;
+    use ast::{Exp, Lit};
     use environment::{ASTEnvironment, Environment};
     use super::*;
     use yaml_rust::YamlLoader;
@@ -225,11 +225,11 @@ mod tests {
         ";
 
         let mut env = ASTEnvironment::new();
-        env.set("a", AST::Number(1));
-        env.set("b", AST::Number(2));
+        env.set("a", Lit::Number(1));
+        env.set("b", Lit::Number(2));
 
         let docs = YamlLoader::load_from_str(s).unwrap();
-        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(15));
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Ok(Yaml::Integer(15)));
     }
 
     #[test]
@@ -249,10 +249,10 @@ mod tests {
           - return: '~> a * (2 + 3)'
         ";
         let mut env = ASTEnvironment::new();
-        env.set("a", AST::Number(1));
-        env.set("b", AST::Number(2));
+        env.set("a", Lit::Number(1));
+        env.set("b", Lit::Number(2));
         let docs = YamlLoader::load_from_str(s).unwrap();
-        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(20));
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Ok(Yaml::Integer(20)));
     }
 
     #[test]
@@ -270,11 +270,11 @@ mod tests {
               - '~> a = 3'
         ";
         let mut env = ASTEnvironment::new();
-        env.set("a", AST::Number(1));
-        env.set("b", AST::Number(2));
+        env.set("a", Lit::Number(1));
+        env.set("b", Lit::Number(2));
         let docs = YamlLoader::load_from_str(s).unwrap();
-        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
-        assert_eq!(env.get("a"), Some(&AST::Number(1)));
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Ok(Yaml::Integer(10)));
+        assert_eq!(env.get("a"), Some(Lit::Number(1)));
     }
 
     #[test]
@@ -292,10 +292,10 @@ mod tests {
           - '~> 2 * (2 + 3)'
         ";
         let mut env = ASTEnvironment::new();
-        env.set("a", AST::Number(1));
-        env.set("b", AST::Number(2));
+        env.set("a", Lit::Number(1));
+        env.set("b", Lit::Number(2));
         let docs = YamlLoader::load_from_str(s).unwrap();
-        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Ok(Yaml::Integer(10)));
     }
 
     #[test]
@@ -314,10 +314,10 @@ mod tests {
           - '~> a * (2 + 3)'
         ";
         let mut env = ASTEnvironment::new();
-        env.set("a", AST::Number(1));
-        env.set("b", AST::Number(2));
+        env.set("a", Lit::Number(1));
+        env.set("b", Lit::Number(2));
         let docs = YamlLoader::load_from_str(s).unwrap();
-        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(10));
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Ok(Yaml::Integer(10)));
         assert_eq!(env.get("c"), None);
     }
 
@@ -336,7 +336,7 @@ mod tests {
         ";
         let mut env = ASTEnvironment::new();
         let docs = YamlLoader::load_from_str(s).unwrap();
-        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Yaml::Integer(5));
-        assert_eq!(env.get("a"), Some(&AST::Number(5)));
+        assert_eq!(evaluate(&docs[0]["foo"], &mut env), Ok(Yaml::Integer(5)));
+        assert_eq!(env.get("a"), Some(Lit::Number(5)));
     }
 }
