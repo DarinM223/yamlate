@@ -1,7 +1,7 @@
 import ctypes
 import os
 import ffi_types
-from python_ffi import Yamlate 
+from python_ffi import Yamlate
 
 """
 Python code that tests the C FFI integration
@@ -49,5 +49,4 @@ with yamlate.new_environment() as environment:
 
             print 'Root\'s type:', ffi_types.yaml_type_to_str(root_yaml.type())
             # should print ['blah', 'foo']
-            print 'Root keys:' , root_yaml.hash_keys()
-
+            print 'Root keys:', root_yaml.hash_keys()

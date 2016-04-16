@@ -4,17 +4,26 @@ import ffi_types
 Python library bindings for yaml_embed C FFI
 """
 
+
 class WrongTypeError(Exception):
     def __str__(self):
         return 'Wrong type error with Yamlate FFI API'
+
 
 class NotDefinedError(Exception):
     def __str__(self):
         return 'Not defined error with Yamlate FFI API'
 
+
 class InvalidStringError(Exception):
     def __str__(self):
         return 'Invalid string error with Yamlate FFI API'
+
+
+class EvaluationError(Exception):
+    def __str__(self):
+        return 'Error evaluating expression with Yamlate FFI API'
+
 
 def handle_ffi_error(code):
     if code == ffi_types.ErrorCode.ERROR_INVALIDSTRING:
@@ -23,12 +32,15 @@ def handle_ffi_error(code):
         raise NotDefinedError()
     elif code == ffi_types.ErrorCode.ERROR_WRONGTYPE:
         raise WrongTypeError()
+    elif code == ffi_types.ErrorCode.ERROR_EVALERROR:
+        raise EvaluationError()
+
 
 class Environment:
     def __init__(self, lib, environment):
         self.environment = environment
         self.lib = lib
-    
+
     def set_integer(self, key, val):
         """
         Sets an integer in the environment
@@ -89,6 +101,7 @@ class Environment:
 
         return result.value
 
+
 class Yaml:
     def __init__(self, lib, yaml):
         self.yaml = yaml
@@ -98,7 +111,10 @@ class Yaml:
         return self.lib.yaml_type(self.yaml)
 
     def evaluate(self, env):
-        return CopyYaml(self.lib, self.lib.yaml_evaluate(self.yaml, env.environment))
+        result = self.lib.yaml_evaluate(self.yaml, env.environment)
+        if result.error != ffi_types.ErrorCode.ERROR_NONE:
+            handle_ffi_error(result.error)
+        return CopyYaml(self.lib, result.value)
 
     def get_integer(self):
         result = self.lib.yaml_integer_get(self.yaml)
@@ -151,6 +167,7 @@ class Yaml:
             handle_ffi_error(result.error)
         return CopyYaml(self.lib, result.value)
 
+
 class NewEnv:
     def __init__(self, lib):
         self.lib = lib
@@ -162,6 +179,7 @@ class NewEnv:
     def __exit__(self, ex_type, ex_val, traceback):
         self.lib.environment_destroy(self.environment)
         return True
+
 
 class NewYaml:
     def __init__(self, lib, s):
@@ -180,6 +198,7 @@ class NewYaml:
         self.lib.yaml_destroy(self.yaml)
         return True
 
+
 class CopyYaml:
     def __init__(self, lib, yaml):
         self.lib = lib
@@ -191,6 +210,7 @@ class CopyYaml:
     def __exit__(self, ex_type, ex_val, traceback):
         self.lib.yaml_destroy(self.yaml)
         return True
+
 
 class Yamlate:
     """
@@ -206,4 +226,3 @@ class Yamlate:
 
     def new_yaml_from_str(self, s):
         return NewYaml(self.lib, s)
-

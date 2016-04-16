@@ -17,7 +17,7 @@ pub extern "C" fn environment_set_integer(env: *mut ASTEnvironment,
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
-    environment.set(key.as_str(), Lit::Number(value));
+    environment.set(&key[..], Lit::Number(value));
 }
 
 #[no_mangle]
@@ -28,7 +28,7 @@ pub extern "C" fn environment_set_string(env: *mut ASTEnvironment,
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
     let val: String = unsafe { CStr::from_ptr(value).to_string_lossy().into_owned() };
 
-    environment.set(key.as_str(), Lit::Str(val));
+    environment.set(&key[..], Lit::Str(val));
 }
 
 #[no_mangle]
@@ -38,7 +38,7 @@ pub extern "C" fn environment_set_decimal(env: *mut ASTEnvironment,
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
-    environment.set(key.as_str(), Lit::Decimal(value));
+    environment.set(&key[..], Lit::Decimal(value));
 }
 
 #[no_mangle]
@@ -48,7 +48,7 @@ pub extern "C" fn environment_get_integer(env: *mut ASTEnvironment,
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
-    match environment.get(key.as_str()) {
+    match environment.get(&key[..]) {
         Some(Lit::Number(val)) => {
             FFIReturnValue {
                 value: val,
@@ -77,22 +77,24 @@ pub extern "C" fn environment_get_string(env: *mut ASTEnvironment,
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
-    match environment.get(key.as_str()) {
+    match environment.get(&key[..]) {
         Some(Lit::Str(ref val)) => {
+            let c_str = CString::new(&val.clone()[..]).unwrap().into_raw();
+
             FFIReturnValue {
-                value: CString::new(val.as_str()).unwrap().as_ptr(),
+                value: c_str as *const c_char,
                 error: Error::None as i32,
             }
         }
         Some(_) => {
             FFIReturnValue {
-                value: CString::new("").unwrap().as_ptr(),
+                value: CString::new("").unwrap().into_raw() as *const c_char,
                 error: Error::WrongType as i32,
             }
         }
         None => {
             FFIReturnValue {
-                value: CString::new("").unwrap().as_ptr(),
+                value: CString::new("").unwrap().into_raw() as *const c_char,
                 error: Error::NotDefined as i32,
             }
         }
@@ -106,7 +108,7 @@ pub extern "C" fn environment_get_decimal(env: *mut ASTEnvironment,
     let environment = unsafe { &mut *env };
     let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
-    match environment.get(key.as_str()) {
+    match environment.get(&key[..]) {
         Some(Lit::Decimal(val)) => {
             FFIReturnValue {
                 value: val,

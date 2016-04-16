@@ -13,6 +13,7 @@ class ErrorCode:
     ERROR_WRONGTYPE = -1
     ERROR_NOTDEFINED = -2
     ERROR_INVALIDSTRING = -3
+    ERROR_EVALERROR = -4
 
 class YamlType:
     """
@@ -98,7 +99,7 @@ def ffi_function_signatures(lib):
     lib.yaml_destroy.argtypes = [yaml_p]
     
     lib.yaml_evaluate.argtypes = [yaml_p, env_p]
-    lib.yaml_evaluate.restype = yaml_p
+    lib.yaml_evaluate.restype = YamlReturnType
     
     lib.yaml_type.argtypes = [yaml_p]
     lib.yaml_type.restype = ctypes.c_int
