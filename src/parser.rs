@@ -155,11 +155,12 @@ mod tests {
         assert_eq!(parser.collapse_stacks(-2), Ok(()));
         assert_eq!(parser.var_stack.len(), 1);
 
-        let expected_val = Some(Exp::BinaryOp(Op::Times,
-                                              box Exp::Lit(Lit::Number(1)),
-                                              box Exp::BinaryOp(Op::Plus,
-                                                                box Exp::Lit(Lit::Number(2)),
-                                                                box Exp::Lit(Lit::Number(3)))));
+        let expected_val =
+            Some(Exp::BinaryOp(Op::Times,
+                               Box::new(Exp::Lit(Lit::Number(1))),
+                               Box::new(Exp::BinaryOp(Op::Plus,
+                                                      Box::new(Exp::Lit(Lit::Number(2))),
+                                                      Box::new(Exp::Lit(Lit::Number(3)))))));
 
         assert_eq!(parser.var_stack.pop_front(), expected_val);
     }
@@ -237,13 +238,17 @@ mod tests {
 
         let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-        let not_tree = Exp::UnaryOp(Op::Not, box Exp::Lit(Lit::Number(5)));
+        let not_tree = Exp::UnaryOp(Op::Not, Box::new(Exp::Lit(Lit::Number(5))));
         let and_tree = Exp::BinaryOp(Op::And,
-                                     box Exp::Lit(Lit::Number(2)),
-                                     box Exp::Lit(Lit::Number(6)));
-        let pow_tree = Exp::BinaryOp(Op::Exponent, box not_tree, box and_tree);
-        let times_tree = Exp::BinaryOp(Op::Times, box pow_tree, box Exp::Lit(Lit::Number(2)));
-        let expected_val = Exp::BinaryOp(Op::Plus, box Exp::Lit(Lit::Number(1)), box times_tree);
+                                     Box::new(Exp::Lit(Lit::Number(2))),
+                                     Box::new(Exp::Lit(Lit::Number(6))));
+        let pow_tree = Exp::BinaryOp(Op::Exponent, Box::new(not_tree), Box::new(and_tree));
+        let times_tree = Exp::BinaryOp(Op::Times,
+                                       Box::new(pow_tree),
+                                       Box::new(Exp::Lit(Lit::Number(2))));
+        let expected_val = Exp::BinaryOp(Op::Plus,
+                                         Box::new(Exp::Lit(Lit::Number(1))),
+                                         Box::new(times_tree));
 
         assert_eq!(result, Ok(expected_val));
     }
@@ -269,8 +274,8 @@ mod tests {
         let result = parser.parse_to_ast(&mut variables, &mut operators);
 
         let expected_val = Ok(Exp::BinaryOp(Op::Plus,
-                                            box Exp::Lit(Lit::Number(1)),
-                                            box Exp::Lit(Lit::Number(2))));
+                                            Box::new(Exp::Lit(Lit::Number(1))),
+                                            Box::new(Exp::Lit(Lit::Number(2)))));
 
         assert_eq!(result, expected_val);
     }

@@ -56,26 +56,26 @@ pub fn operator_precedence(string: &str) -> i32 {
 
 pub fn operator_to_exp(operator: &str, exp1: Exp, exp2: Exp) -> Result<Exp, LexError> {
     Ok(match operator {
-        "==" => Exp::BinaryOp(Op::Equal, box exp1, box exp2),
-        "!=" => Exp::BinaryOp(Op::NotEqual, box exp1, box exp2),
-        "+" => Exp::BinaryOp(Op::Plus, box exp1, box exp2),
-        "-" => Exp::BinaryOp(Op::Minus, box exp1, box exp2),
-        "*" => Exp::BinaryOp(Op::Times, box exp1, box exp2),
-        "/" => Exp::BinaryOp(Op::Divide, box exp1, box exp2),
-        "%" => Exp::BinaryOp(Op::Modulo, box exp1, box exp2),
-        "^" => Exp::BinaryOp(Op::Exponent, box exp1, box exp2),
-        "&&" => Exp::BinaryOp(Op::And, box exp1, box exp2),
-        "||" => Exp::BinaryOp(Op::Or, box exp1, box exp2),
+        "==" => Exp::BinaryOp(Op::Equal, Box::new(exp1), Box::new(exp2)),
+        "!=" => Exp::BinaryOp(Op::NotEqual, Box::new(exp1), Box::new(exp2)),
+        "+" => Exp::BinaryOp(Op::Plus, Box::new(exp1), Box::new(exp2)),
+        "-" => Exp::BinaryOp(Op::Minus, Box::new(exp1), Box::new(exp2)),
+        "*" => Exp::BinaryOp(Op::Times, Box::new(exp1), Box::new(exp2)),
+        "/" => Exp::BinaryOp(Op::Divide, Box::new(exp1), Box::new(exp2)),
+        "%" => Exp::BinaryOp(Op::Modulo, Box::new(exp1), Box::new(exp2)),
+        "^" => Exp::BinaryOp(Op::Exponent, Box::new(exp1), Box::new(exp2)),
+        "&&" => Exp::BinaryOp(Op::And, Box::new(exp1), Box::new(exp2)),
+        "||" => Exp::BinaryOp(Op::Or, Box::new(exp1), Box::new(exp2)),
         "=" => {
             if let Exp::Variable(name) = exp1 {
-                Exp::Assign(name, box exp2)
+                Exp::Assign(name, Box::new(exp2))
             } else {
                 return Err(LexError::new("Assign name has to be string"));
             }
         }
         ":=" => {
             if let Exp::Variable(name) = exp1 {
-                Exp::Declare(name, box exp2)
+                Exp::Declare(name, Box::new(exp2))
             } else {
                 return Err(LexError::new("Declare name has to be string"));
             }

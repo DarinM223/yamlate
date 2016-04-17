@@ -16,7 +16,7 @@ pub extern "C" fn yaml_create_from_string(s: *const c_char) -> FFIReturnValue<*c
     let doc_option = docs.pop();
 
     if let Some(doc) = doc_option {
-        let yaml_ptr = unsafe { transmute(box doc) };
+        let yaml_ptr = unsafe { transmute(Box::new(doc)) };
 
         FFIReturnValue {
             value: yaml_ptr,
@@ -44,7 +44,7 @@ pub extern "C" fn yaml_evaluate(yaml: *const Yaml,
 
     if let Ok(result) = evaluate(yaml, environment) {
         FFIReturnValue {
-            value: unsafe { transmute::<Box<Yaml>, *const Yaml>(box result) },
+            value: unsafe { transmute::<Box<Yaml>, *const Yaml>(Box::new(result)) },
             error: Error::None as i32,
         }
     } else {
@@ -168,7 +168,7 @@ pub extern "C" fn yaml_hash_get(yaml: *const Yaml,
 
     if let Yaml::Hash(ref h) = *yaml {
         if let Some(result) = h.get(&Yaml::String(hash_key)) {
-            let yaml_ptr = unsafe { transmute(box result.clone()) };
+            let yaml_ptr = unsafe { transmute(Box::new(result.clone())) };
 
             FFIReturnValue {
                 value: yaml_ptr,
@@ -211,7 +211,7 @@ pub extern "C" fn yaml_array_get(yaml: *const Yaml, index: i32) -> FFIReturnValu
 
     if let Yaml::Array(ref a) = *yaml {
         if let Some(result) = a.get(index as usize) {
-            let yaml_ptr = unsafe { transmute(box result.clone()) };
+            let yaml_ptr = unsafe { transmute(Box::new(result.clone())) };
 
             FFIReturnValue {
                 value: yaml_ptr,

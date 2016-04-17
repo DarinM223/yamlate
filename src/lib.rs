@@ -1,4 +1,4 @@
-#![feature(box_patterns, box_syntax, custom_attribute)]
+#![feature(custom_attribute)]
 
 #[cfg_attr(feature="clippy", feature(plugin))]
 #[cfg_attr(feature="clippy", plugin(clippy))]
