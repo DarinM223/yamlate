@@ -1,7 +1,7 @@
 pub mod exp;
 pub mod lit;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Op {
     Plus,
     Minus,

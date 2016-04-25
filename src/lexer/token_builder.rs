@@ -1,5 +1,5 @@
 use ast::{Exp, Lit};
-use errors::LexError;
+use errors::{LexError, YamlError};
 use helpers::is_operator;
 use lexer::{LexerState, WordState};
 
@@ -8,12 +8,11 @@ use lexer::{LexerState, WordState};
 pub trait TokenBuilder {
     /// append adds a character from the parsed string, changing the lexer state depending
     /// on the type of character
-    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), LexError>;
+    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), YamlError>;
 }
 
 // Implementations of TokenBuilder for handling letters,
 // digits, operators, quotes, and dots
-//
 
 pub struct LetterBuilder;
 pub struct DigitBuilder;
@@ -22,13 +21,13 @@ pub struct QuoteBuilder;
 pub struct DotBuilder;
 
 impl TokenBuilder for LetterBuilder {
-    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), LexError> {
+    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), YamlError> {
         match state.curr_state {
             WordState::Variable |
             WordState::String => state.curr_chars.push(ch),
 
             WordState::Number |
-            WordState::Decimal => return Err(LexError::new("Number cannot have a letter after it")),
+            WordState::Decimal => return Err(YamlError::LexError(LexError::LetterAfterNumber)),
 
             WordState::Operator => {
                 let curr_str = state.emit_string();
@@ -48,7 +47,7 @@ impl TokenBuilder for LetterBuilder {
 }
 
 impl TokenBuilder for DigitBuilder {
-    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), LexError> {
+    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), YamlError> {
         match state.curr_state {
             WordState::Variable |
             WordState::Number |
@@ -73,7 +72,7 @@ impl TokenBuilder for DigitBuilder {
 }
 
 impl TokenBuilder for OperatorBuilder {
-    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), LexError> {
+    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), YamlError> {
         match state.curr_state {
             WordState::Variable |
             WordState::Number |
@@ -87,7 +86,7 @@ impl TokenBuilder for OperatorBuilder {
                     WordState::Decimal => {
                         Exp::Lit(Lit::Decimal(curr_str.as_str().parse().unwrap_or(0.0)))
                     }
-                    _ => return Err(LexError::new("Invalid word state")),
+                    _ => return Err(YamlError::LexError(LexError::ResultNotLiteral)),
                 };
 
                 state.variables.push_front(ast_node);
@@ -120,7 +119,7 @@ impl TokenBuilder for OperatorBuilder {
 }
 
 impl TokenBuilder for QuoteBuilder {
-    fn append(&self, _ch: char, state: &mut LexerState) -> Result<(), LexError> {
+    fn append(&self, _ch: char, state: &mut LexerState) -> Result<(), YamlError> {
         match state.curr_state {
             WordState::String => {
                 let curr_str = state.emit_string();
@@ -131,7 +130,7 @@ impl TokenBuilder for QuoteBuilder {
             WordState::Number |
             WordState::Decimal |
             WordState::Variable => {
-                return Err(LexError::new("Cannot create a string after invalid type"))
+                return Err(YamlError::LexError(LexError::InvalidQuoteAppend));
             }
 
             WordState::Operator => {
@@ -148,7 +147,7 @@ impl TokenBuilder for QuoteBuilder {
 }
 
 impl TokenBuilder for DotBuilder {
-    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), LexError> {
+    fn append(&self, ch: char, state: &mut LexerState) -> Result<(), YamlError> {
         match state.curr_state {
             WordState::String => state.curr_chars.push(ch),
 
@@ -159,16 +158,15 @@ impl TokenBuilder for DotBuilder {
 
             WordState::Operator |
             WordState::Decimal |
-            WordState::Variable => return Err(LexError::new("Cannot have a dot after")),
-
-            WordState::None => return Err(LexError::new("Cannot start with dot")),
+            WordState::Variable |
+            WordState::None => return Err(YamlError::LexError(LexError::InvalidDotAppend)),
         }
 
         Ok(())
     }
 }
 
-pub fn append_ch(ch: char, state: &mut LexerState) -> Result<(), LexError> {
+pub fn append_ch(ch: char, state: &mut LexerState) -> Result<(), YamlError> {
     if ch.is_alphabetic() || ch == '_' {
         LetterBuilder.append(ch, state)
     } else if ch.is_digit(10) {

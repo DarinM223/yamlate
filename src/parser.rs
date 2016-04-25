@@ -1,10 +1,7 @@
 use ast::{Exp, Op};
-use errors::LexError;
+use errors::{LexError, YamlError};
 use helpers::{operator_precedence, operator_to_exp};
 use std::collections::VecDeque;
-
-const OPERATOR_ERROR: &'static str = "Operator cannot be retrieved from the stack";
-const VARIABLE_ERROR: &'static str = "Variable cannot be retrieved from the stack";
 
 /// Parses string into AST
 pub struct Parser {
@@ -22,14 +19,14 @@ impl Parser {
 
     /// Combines the current variable and operator stacks into an AST
     /// and pushes the result back onto the variable stack
-    fn collapse_stacks(&mut self, add_op_precedence: i32) -> Result<(), LexError> {
+    fn collapse_stacks(&mut self, add_op_precedence: i32) -> Result<(), YamlError> {
         let mut paren_count = 0;
         while !self.op_stack.is_empty() &&
               (add_op_precedence < operator_precedence(self.op_stack.front().unwrap()) ||
                paren_count > 0) {
             let operator = match self.op_stack.pop_front() {
                 Some(op) => op,
-                None => return Err(LexError::new(OPERATOR_ERROR)),
+                None => return Err(YamlError::LexError(LexError::OperatorStackError)),
             };
 
             match operator.as_str() {
@@ -39,7 +36,7 @@ impl Parser {
                 "!" => {
                     let var = match self.var_stack.pop_front() {
                         Some(var) => var,
-                        None => return Err(LexError::new(VARIABLE_ERROR)),
+                        None => return Err(YamlError::LexError(LexError::VariableStackError)),
                     };
                     self.var_stack.push_front(Exp::UnaryOp(Op::Not, Box::new(var)));
                 }
@@ -48,11 +45,11 @@ impl Parser {
                 _ => {
                     let var1 = match self.var_stack.pop_front() {
                         Some(var) => var,
-                        None => return Err(LexError::new(VARIABLE_ERROR)),
+                        None => return Err(YamlError::LexError(LexError::VariableStackError)),
                     };
                     let var2 = match self.var_stack.pop_front() {
                         Some(var) => var,
-                        None => return Err(LexError::new(VARIABLE_ERROR)),
+                        None => return Err(YamlError::LexError(LexError::VariableStackError)),
                     };
                     let ast_node = try!(operator_to_exp(operator.as_str(), var2, var1));
 
@@ -62,7 +59,7 @@ impl Parser {
         }
 
         if paren_count != 0 {
-            Err(LexError::new("Parentheses do not match"))
+            Err(YamlError::LexError(LexError::ParenthesisNotMatch))
         } else {
             Ok(())
         }
@@ -73,7 +70,7 @@ impl Parser {
     pub fn parse_to_ast(&mut self,
                         variables: &mut VecDeque<Exp>,
                         operators: &mut VecDeque<String>)
-                        -> Result<Exp, LexError> {
+                        -> Result<Exp, YamlError> {
         while !operators.is_empty() {
             let mut lower_precedence = false;
             let mut op_precedence = -2;
@@ -115,11 +112,11 @@ impl Parser {
         }
 
         if self.var_stack.len() > 1 {
-            Err(LexError::new("Expression could not be completely evaluated"))
+            Err(YamlError::LexError(LexError::Incomplete))
         } else if self.var_stack.len() == 1 {
             Ok(self.var_stack.pop_front().unwrap())
         } else {
-            Err(LexError::new("Expression does not result in a value"))
+            Err(YamlError::LexError(LexError::ResultNotLiteral))
         }
     }
 }
@@ -127,7 +124,7 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use ast::{Exp, Lit, Op};
-    use errors::LexError;
+    use errors::{LexError, YamlError};
     use std::collections::VecDeque;
     use super::*;
 
@@ -182,7 +179,7 @@ mod tests {
         let result = parser.parse_to_ast(&mut variables, &mut operators);
 
         assert_eq!(result,
-                   Err(LexError::new("Variable cannot be retrieved from the stack")));
+                   Err(YamlError::LexError(LexError::VariableStackError)));
     }
 
     #[test]
@@ -199,8 +196,7 @@ mod tests {
         variables.push_front(Exp::Lit(Lit::Number(2)));
 
         let result = parser.parse_to_ast(&mut variables, &mut operators);
-        assert_eq!(result,
-                   Err(LexError::new("Expression could not be completely evaluated")));
+        assert_eq!(result, Err(YamlError::LexError(LexError::Incomplete)));
     }
 
     #[test]

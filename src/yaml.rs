@@ -1,6 +1,6 @@
 use ast::{Exp, Lit};
 use environment::Environment;
-use errors::EvalError;
+use errors::YamlError;
 use lexer::Lexer;
 use parser::Parser;
 use std::collections::BTreeMap;
@@ -16,7 +16,7 @@ pub enum YamlType {
 fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
                                prop_str: &str,
                                env: &mut Environment)
-                               -> Result<YamlType, EvalError> {
+                               -> Result<YamlType, YamlError> {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
             if keyword.as_str() == "do" {
@@ -46,7 +46,7 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
 fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
                             prop_str: &str,
                             env: &mut Environment)
-                            -> Result<YamlType, EvalError> {
+                            -> Result<YamlType, YamlError> {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
             let result = try!(evaluate_helper(&Yaml::String(prop_str.to_owned()), env));
@@ -81,7 +81,7 @@ fn apply_keyword(s: &str,
                  k: &Yaml,
                  v: &Yaml,
                  env: &mut Environment)
-                 -> Result<YamlType, EvalError> {
+                 -> Result<YamlType, YamlError> {
     match s {
         "while" | "if" => {
             if let Yaml::Array(ref arr) = *v {
@@ -132,7 +132,7 @@ fn apply_keyword(s: &str,
 }
 
 // evaluates the result of a fragment of YAML
-fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> Result<YamlType, EvalError> {
+fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> Result<YamlType, YamlError> {
     match *yaml {
         Yaml::String(ref s) => {
             if s.as_str().contains("~>") {
@@ -186,7 +186,7 @@ fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> Result<YamlType, EvalE
 }
 
 // Main function for evaluating YAML
-pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Result<Yaml, EvalError> {
+pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Result<Yaml, YamlError> {
     let result = try!(evaluate_helper(yaml, env));
 
     Ok(match result {

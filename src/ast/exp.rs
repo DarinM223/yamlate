@@ -1,6 +1,6 @@
 use ast::Op;
 use environment::Environment;
-use errors::EvalError;
+use errors::{EvalError, YamlError};
 use ast::lit::Lit;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -21,12 +21,12 @@ pub enum Exp {
 
 impl Exp {
     /// Evaluates a expression and returns a Result type wrapping an expression
-    pub fn eval(&self, env: &mut Environment) -> Result<Exp, EvalError> {
+    pub fn eval(&self, env: &mut Environment) -> Result<Exp, YamlError> {
         match *self {
             Exp::Variable(ref name) => {
                 match env.get(name.as_str()) {
                     Some(lit) => Ok(Exp::Lit(lit)),
-                    None => Err(EvalError::new("Variable name not in environment")),
+                    None => Err(YamlError::EvalError(EvalError::VarNotInEnv(name.clone()))),
                 }
             }
             Exp::Declare(ref name, ref exp) => {
@@ -34,7 +34,7 @@ impl Exp {
                     env.set(name.as_str(), value.clone());
                     Ok(Exp::Lit(value))
                 } else {
-                    Err(EvalError::new("Declare has to have an expression that reduces to a value"))
+                    Err(YamlError::EvalError(EvalError::CannotReduceDeclare(exp.clone())))
                 }
             }
             Exp::Assign(ref name, ref exp) => {
@@ -42,7 +42,7 @@ impl Exp {
                     env.assign(name.as_str(), value.clone());
                     Ok(Exp::Lit(value))
                 } else {
-                    Err(EvalError::new("Assign has to have an expression that reduces to a value"))
+                    Err(YamlError::EvalError(EvalError::CannotReduceAssign(exp.clone())))
                 }
             }
             Exp::UnaryOp(ref op, ref exp) => {
@@ -59,10 +59,12 @@ impl Exp {
                         Op::And |
                         Op::Or |
                         Op::Equal |
-                        Op::NotEqual => return Err(EvalError::new("Op is not a unary operator")),
+                        Op::NotEqual => {
+                            return Err(YamlError::EvalError(EvalError::NotUnOp(op.clone())))
+                        }
                     }
                 } else {
-                    Err(EvalError::new("UnaryOp has to have an expression that reduces to a value"))
+                    Err(YamlError::EvalError(EvalError::CannotReduceUnOp(op.clone(), exp.clone())))
                 }
             }
             Exp::BinaryOp(ref op, ref exp1, ref exp2) => {
@@ -80,10 +82,14 @@ impl Exp {
                         Op::Equal => Lit::Bool(val1 == val2),
                         Op::NotEqual => Lit::Bool(val1 != val2),
                         // Non-binary operators (for exhaustiveness checking)
-                        Op::Not => return Err(EvalError::new("Op is not a binary operator")),
+                        Op::Not => {
+                            return Err(YamlError::EvalError(EvalError::NotBinOp(op.clone())))
+                        }
                     }))
                 } else {
-                    Err(EvalError::new("BinaryOp has to have expressions that reduce to values"))
+                    Err(YamlError::EvalError(EvalError::CannotReduceBinOp(op.clone(),
+                                                                          exp1.clone(),
+                                                                          exp2.clone())))
                 }
             }
             ref lit @ Exp::Lit(_) => Ok(lit.clone()),

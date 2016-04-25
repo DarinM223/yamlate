@@ -1,7 +1,7 @@
 mod token_builder;
 
 use ast::{Exp, Lit};
-use errors::LexError;
+use errors::{LexError, YamlError};
 use lexer::token_builder::append_ch;
 use std::collections::VecDeque;
 
@@ -56,7 +56,7 @@ impl Lexer {
     /// tokens to the lexer. You can retrieve the tokenized
     /// operators through self.state.operators, and the tokenized
     /// Exp constants/variables through self.state.variables
-    pub fn parse_string(&mut self, s: &str) -> Result<(), LexError> {
+    pub fn parse_string(&mut self, s: &str) -> Result<(), YamlError> {
         for ch in s.to_owned().chars() {
             if ch == ' ' || ch == '\t' {
                 if self.state.curr_state == WordState::String {
@@ -83,7 +83,7 @@ impl Lexer {
                         Exp::Lit(Lit::Decimal(curr_str.as_str().parse().unwrap_or(0.0)))
                     }
                     WordState::String => Exp::Lit(Lit::Str(curr_str)),
-                    _ => return Err(LexError::new("Invalid word state")),
+                    _ => return Err(YamlError::LexError(LexError::ResultNotLiteral)),
                 };
 
                 self.state.variables.push_front(ast_node);

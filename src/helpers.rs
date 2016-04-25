@@ -1,5 +1,5 @@
 use ast::{Exp, Op};
-use errors::LexError;
+use errors::{LexError, YamlError};
 use std::collections::HashMap;
 
 lazy_static! {
@@ -54,7 +54,7 @@ pub fn operator_precedence(string: &str) -> i32 {
     }
 }
 
-pub fn operator_to_exp(operator: &str, exp1: Exp, exp2: Exp) -> Result<Exp, LexError> {
+pub fn operator_to_exp(operator: &str, exp1: Exp, exp2: Exp) -> Result<Exp, YamlError> {
     Ok(match operator {
         "==" => Exp::BinaryOp(Op::Equal, Box::new(exp1), Box::new(exp2)),
         "!=" => Exp::BinaryOp(Op::NotEqual, Box::new(exp1), Box::new(exp2)),
@@ -70,17 +70,17 @@ pub fn operator_to_exp(operator: &str, exp1: Exp, exp2: Exp) -> Result<Exp, LexE
             if let Exp::Variable(name) = exp1 {
                 Exp::Assign(name, Box::new(exp2))
             } else {
-                return Err(LexError::new("Assign name has to be string"));
+                return Err(YamlError::LexError(LexError::NameNotString));
             }
         }
         ":=" => {
             if let Exp::Variable(name) = exp1 {
                 Exp::Declare(name, Box::new(exp2))
             } else {
-                return Err(LexError::new("Declare name has to be string"));
+                return Err(YamlError::LexError(LexError::NameNotString));
             }
         }
-        _ => return Err(LexError::new("Unknown operator")),
+        _ => return Err(YamlError::LexError(LexError::UnknownOperator)),
     })
 }
 
