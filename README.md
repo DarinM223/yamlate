@@ -100,12 +100,22 @@ YAML file
 * Safe by default (prevents not only memory problems but a whole host of other problems as well)
 * Easy testing out of the box (no confusing linking or setup problems like in C/C++)
 
+### Building
+
+You have to use cargo to build the project into a dynamic library.
+
+```
+cargo build --release
+```
+
+The resulting library is at ./target/release/libyamlate.dylib
+
 ### Contributing
 
 Contributions are welcome! Make sure that all of the existing test cases pass (from cargo test) and if you are adding features
 you are adding additional test cases. 
 
-Make sure that you are not getting any warnings from clippy and rust-sorty. 
+Make sure that you are not getting any warnings from clippy.
 
 If you are getting clippy warnings
 there will be a line after the warning with something like this:
@@ -114,19 +124,4 @@ there will be a line after the warning with something like this:
 help: for further information visit https://github.com/Manishearth/rust-clippy/wiki#<clippy_warning_here>
 ```
 
-If you are getting rust-sorty warnings the warning will look like this:
-
-```
-warning: use statements should be in alphabetical order!, #[warn(unsorted_declarations)] on by default
-```
-
-There only warnings should be about #![...] declarations (because rust-sorty doesn't work for #![...] right now)
-
 You should also make sure your code is formatted with rustfmt. 
-
-### TODO:
-
-* Add Ruby and Node.js wrapper
-* Add support for more complex language features like functions, structures
-* Be able to access other fields in the YAML file as a variable
-
