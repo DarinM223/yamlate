@@ -23,11 +23,11 @@ pub struct DotBuilder;
 impl TokenBuilder for LetterBuilder {
     fn append(&self, ch: char, state: &mut LexerState) -> Result<(), YamlError> {
         match state.curr_state {
-            WordState::Variable |
-            WordState::String => state.curr_chars.push(ch),
+            WordState::Variable | WordState::String => state.curr_chars.push(ch),
 
-            WordState::Number |
-            WordState::Decimal => return Err(YamlError::LexError(LexError::LetterAfterNumber)),
+            WordState::Number | WordState::Decimal => {
+                return Err(YamlError::LexError(LexError::LetterAfterNumber))
+            }
 
             WordState::Operator => {
                 let curr_str = state.emit_string();
@@ -49,10 +49,9 @@ impl TokenBuilder for LetterBuilder {
 impl TokenBuilder for DigitBuilder {
     fn append(&self, ch: char, state: &mut LexerState) -> Result<(), YamlError> {
         match state.curr_state {
-            WordState::Variable |
-            WordState::Number |
-            WordState::Decimal |
-            WordState::String => state.curr_chars.push(ch),
+            WordState::Variable | WordState::Number | WordState::Decimal | WordState::String => {
+                state.curr_chars.push(ch)
+            }
 
             WordState::Operator => {
                 let curr_str = state.emit_string();
@@ -74,9 +73,7 @@ impl TokenBuilder for DigitBuilder {
 impl TokenBuilder for OperatorBuilder {
     fn append(&self, ch: char, state: &mut LexerState) -> Result<(), YamlError> {
         match state.curr_state {
-            WordState::Variable |
-            WordState::Number |
-            WordState::Decimal => {
+            WordState::Variable | WordState::Number | WordState::Decimal => {
                 let curr_str = state.emit_string();
                 let ast_node = match state.curr_state {
                     WordState::Variable => Exp::Variable(curr_str),
@@ -127,9 +124,7 @@ impl TokenBuilder for QuoteBuilder {
                 state.curr_state = WordState::None;
             }
 
-            WordState::Number |
-            WordState::Decimal |
-            WordState::Variable => {
+            WordState::Number | WordState::Decimal | WordState::Variable => {
                 return Err(YamlError::LexError(LexError::InvalidQuoteAppend));
             }
 
@@ -156,10 +151,9 @@ impl TokenBuilder for DotBuilder {
                 state.curr_state = WordState::Decimal;
             }
 
-            WordState::Operator |
-            WordState::Decimal |
-            WordState::Variable |
-            WordState::None => return Err(YamlError::LexError(LexError::InvalidDotAppend)),
+            WordState::Operator | WordState::Decimal | WordState::Variable | WordState::None => {
+                return Err(YamlError::LexError(LexError::InvalidDotAppend))
+            }
         }
 
         Ok(())

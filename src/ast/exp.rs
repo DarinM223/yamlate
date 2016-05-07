@@ -50,16 +50,8 @@ impl Exp {
                     match *op {
                         Op::Not => Ok(Exp::Lit(try!(!value))),
                         // Non-unary operators (for exhaustiveness checking)
-                        Op::Plus |
-                        Op::Minus |
-                        Op::Times |
-                        Op::Divide |
-                        Op::Modulo |
-                        Op::Exponent |
-                        Op::And |
-                        Op::Or |
-                        Op::Equal |
-                        Op::NotEqual => {
+                        Op::Plus | Op::Minus | Op::Times | Op::Divide | Op::Modulo |
+                        Op::Exponent | Op::And | Op::Or | Op::Equal | Op::NotEqual => {
                             return Err(YamlError::EvalError(EvalError::NotUnOp(op.clone())))
                         }
                     }
@@ -147,10 +139,7 @@ mod tests {
         env.set("c", Lit::Number(2));
         env.set("d", Lit::Number(6));
 
-        let (a, b, c, d) = ("a".to_owned(),
-                            "b".to_owned(),
-                            "c".to_owned(),
-                            "d".to_owned());
+        let (a, b, c, d) = ("a".to_owned(), "b".to_owned(), "c".to_owned(), "d".to_owned());
         let sub_tree = Exp::BinaryOp(Op::Minus,
                                      Box::new(Exp::Variable(b)),
                                      Box::new(Exp::Variable(c)));
