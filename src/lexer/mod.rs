@@ -111,16 +111,16 @@ mod tests {
                                                   Exp::Lit(Lit::Number(2)),
                                                   Exp::Variable("b".to_owned()),
                                                   Exp::Lit(Lit::Number(3))]
-                                                 .into_iter()
-                                                 .rev()
-                                                 .collect();
+            .into_iter()
+            .rev()
+            .collect();
         assert_eq!(lexer.state.variables, variable_result);
 
         let operator_result: VecDeque<String> = vec!["+", "-", "+"]
-                                                    .into_iter()
-                                                    .rev()
-                                                    .map(|s| s.to_owned())
-                                                    .collect();
+            .into_iter()
+            .rev()
+            .map(|s| s.to_owned())
+            .collect();
         assert_eq!(lexer.state.operators, operator_result);
     }
 
@@ -135,17 +135,17 @@ mod tests {
                                                   Exp::Variable("b".to_owned()),
                                                   Exp::Lit(Lit::Number(3)),
                                                   Exp::Lit(Lit::Number(5))]
-                                                 .into_iter()
-                                                 .rev()
-                                                 .collect();
+            .into_iter()
+            .rev()
+            .collect();
         assert_eq!(lexer.state.variables, variable_result);
 
         let operator_result: VecDeque<String> = vec!["(", "+", "(", "-", ")", "+", "(", "*", ")",
                                                      ")"]
-                                                    .into_iter()
-                                                    .rev()
-                                                    .map(|s| s.to_owned())
-                                                    .collect();
+            .into_iter()
+            .rev()
+            .map(|s| s.to_owned())
+            .collect();
         assert_eq!(lexer.state.operators, operator_result);
     }
 
@@ -160,17 +160,17 @@ mod tests {
                                                   Exp::Variable("b".to_owned()),
                                                   Exp::Lit(Lit::Number(3)),
                                                   Exp::Lit(Lit::Number(5))]
-                                                 .into_iter()
-                                                 .rev()
-                                                 .collect();
+            .into_iter()
+            .rev()
+            .collect();
         assert_eq!(lexer.state.variables, variable_result);
 
         let operator_result: VecDeque<String> = vec!["(", "==", "(", "-", ")", "+", "(", "!=",
                                                      ")", ")"]
-                                                    .into_iter()
-                                                    .rev()
-                                                    .map(|s| s.to_owned())
-                                                    .collect();
+            .into_iter()
+            .rev()
+            .map(|s| s.to_owned())
+            .collect();
         assert_eq!(lexer.state.operators, operator_result);
     }
 
@@ -185,16 +185,16 @@ mod tests {
                                                   Exp::Variable("b".to_owned()),
                                                   Exp::Lit(Lit::Number(2)),
                                                   Exp::Lit(Lit::Number(5))]
-                                                 .into_iter()
-                                                 .rev()
-                                                 .collect();
+            .into_iter()
+            .rev()
+            .collect();
         assert_eq!(lexer.state.variables, variable_result);
 
         let operator_result: VecDeque<String> = vec!["(", "+", "-", "^", ")", "=="]
-                                                    .into_iter()
-                                                    .rev()
-                                                    .map(|s| s.to_owned())
-                                                    .collect();
+            .into_iter()
+            .rev()
+            .map(|s| s.to_owned())
+            .collect();
         assert_eq!(lexer.state.operators, operator_result);
     }
 
@@ -205,18 +205,18 @@ mod tests {
         assert_eq!(lexer.parse_string(s), Ok(()));
 
         let variable_result: VecDeque<Exp> = vec![Exp::Lit(Lit::Str("Hello world1234 + "
-                                                                        .to_owned())),
+                                                      .to_owned())),
                                                   Exp::Lit(Lit::Str("bye123".to_owned()))]
-                                                 .into_iter()
-                                                 .rev()
-                                                 .collect();
+            .into_iter()
+            .rev()
+            .collect();
         assert_eq!(lexer.state.variables, variable_result);
 
         let operator_result: VecDeque<String> = vec!["(", "+", ")"]
-                                                    .into_iter()
-                                                    .rev()
-                                                    .map(|s| s.to_owned())
-                                                    .collect();
+            .into_iter()
+            .rev()
+            .map(|s| s.to_owned())
+            .collect();
         assert_eq!(lexer.state.operators, operator_result);
     }
 
@@ -229,9 +229,9 @@ mod tests {
         let variable_result: VecDeque<Exp> = vec![Exp::Lit(Lit::Decimal(1.23)),
                                                   Exp::Lit(Lit::Decimal(3.12)),
                                                   Exp::Lit(Lit::Decimal(123.45678))]
-                                                 .into_iter()
-                                                 .rev()
-                                                 .collect();
+            .into_iter()
+            .rev()
+            .collect();
         assert_eq!(lexer.state.variables, variable_result);
     }
 }
