@@ -204,8 +204,6 @@ mod tests {
     use yaml_rust::yaml::Yaml;
 
     #[test]
-    #[allow(unused_attributes)]
-    #[rustfmt_skip]
     fn test_yaml_eval() {
         // Test if evaluating "foo" returns 15
         let s = "
@@ -227,8 +225,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(unused_attributes)]
-    #[rustfmt_skip]
     fn test_yaml_else() {
         // Test if evaluating "foo" returns 20
         let s = "
@@ -250,8 +246,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(unused_attributes)]
-    #[rustfmt_skip]
     fn test_return() {
         // Test that return doesn't execute statements after it
         let s = "
@@ -272,8 +266,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(unused_attributes)]
-    #[rustfmt_skip]
     fn test_return_last_val() {
         // Test that the last value is returned as value instead of return
         let s = "
@@ -293,8 +285,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(unused_attributes)]
-    #[rustfmt_skip]
     fn test_local_variable() {
         // Test that local variable is destroyed after if
         let s = "
@@ -316,8 +306,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(unused_attributes)]
-    #[rustfmt_skip]
     fn test_while_loop() {
         let s = "
         foo:
