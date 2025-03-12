@@ -5,8 +5,8 @@ use std::ffi::{CStr, CString};
 use std::mem::{forget, transmute};
 use std::ptr;
 use yaml::evaluate;
-use yaml_rust::YamlLoader;
 use yaml_rust::yaml::Yaml;
+use yaml_rust::YamlLoader;
 
 #[no_mangle]
 pub extern "C" fn yaml_create_from_string(s: *const c_char) -> FFIReturnValue<*const Yaml> {
@@ -36,9 +36,10 @@ pub extern "C" fn yaml_destroy(yaml: *const Yaml) {
 }
 
 #[no_mangle]
-pub extern "C" fn yaml_evaluate(yaml: *const Yaml,
-                                env: *mut ASTEnvironment)
-                                -> FFIReturnValue<*const Yaml> {
+pub extern "C" fn yaml_evaluate(
+    yaml: *const Yaml,
+    env: *mut ASTEnvironment,
+) -> FFIReturnValue<*const Yaml> {
     let yaml = unsafe { &*yaml };
     let environment = unsafe { &mut *env };
 
@@ -160,9 +161,10 @@ pub extern "C" fn yaml_hash_keys(yaml: *const Yaml) -> FFIArrayReturnValue<*cons
 }
 
 #[no_mangle]
-pub extern "C" fn yaml_hash_get(yaml: *const Yaml,
-                                key: *const c_char)
-                                -> FFIReturnValue<*const Yaml> {
+pub extern "C" fn yaml_hash_get(
+    yaml: *const Yaml,
+    key: *const c_char,
+) -> FFIReturnValue<*const Yaml> {
     let yaml = unsafe { &*yaml };
     let hash_key: String = unsafe { CStr::from_ptr(key).to_string_lossy().into_owned() };
 

@@ -2,8 +2,8 @@ use ast::{Exp, Lit};
 use environment::Environment;
 use errors::YamlError;
 use lexer::Lexer;
+use linked_hash_map::LinkedHashMap;
 use parser::Parser;
-use std::collections::BTreeMap;
 use yaml_rust::yaml::Yaml;
 
 #[derive(Debug, PartialEq)]
@@ -13,16 +13,17 @@ pub enum YamlType {
 }
 
 // same as apply_keywords but only works on nested keywords in while statements
-fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
-                               prop_str: &str,
-                               env: &mut Environment)
-                               -> Result<YamlType, YamlError> {
+fn apply_nested_while_keywords(
+    h: &LinkedHashMap<Yaml, Yaml>,
+    prop_str: &str,
+    env: &mut dyn Environment,
+) -> Result<YamlType, YamlError> {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
             if keyword.as_str() == "do" {
                 loop {
                     // check proposition if true
-                    let result = try!(evaluate_helper(&Yaml::String(prop_str.to_owned()), env));
+                    let result = evaluate_helper(&Yaml::String(prop_str.to_owned()), env)?;
                     if result == YamlType::Value(Yaml::Boolean(false)) {
                         break;
                     }
@@ -30,7 +31,7 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
                     env.push();
 
                     // evaluate commands inside do block
-                    try!(evaluate_helper(val, env));
+                    evaluate_helper(val, env)?;
 
                     env.pop();
                 }
@@ -43,19 +44,20 @@ fn apply_nested_while_keywords(h: &BTreeMap<Yaml, Yaml>,
 
 // same as apply_keywords but only works on nested keywords in if statements
 // like do or else
-fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
-                            prop_str: &str,
-                            env: &mut Environment)
-                            -> Result<YamlType, YamlError> {
+fn apply_nested_if_keywords(
+    h: &LinkedHashMap<Yaml, Yaml>,
+    prop_str: &str,
+    env: &mut dyn Environment,
+) -> Result<YamlType, YamlError> {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
-            let result = try!(evaluate_helper(&Yaml::String(prop_str.to_owned()), env));
+            let result = evaluate_helper(&Yaml::String(prop_str.to_owned()), env)?;
 
             match keyword.as_str() {
                 "do" => {
                     if result == YamlType::Value(Yaml::Boolean(true)) {
                         env.push();
-                        let result = try!(evaluate_helper(val, env));
+                        let result = evaluate_helper(val, env)?;
                         env.pop();
                         return Ok(result);
                     }
@@ -63,7 +65,7 @@ fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
                 "else" => {
                     if result == YamlType::Value(Yaml::Boolean(false)) {
                         env.push();
-                        let result = try!(evaluate_helper(val, env));
+                        let result = evaluate_helper(val, env)?;
                         env.pop();
                         return Ok(result);
                     }
@@ -77,11 +79,12 @@ fn apply_nested_if_keywords(h: &BTreeMap<Yaml, Yaml>,
 }
 
 // applies the effects of keywords in a YAML hash
-fn apply_keyword(s: &str,
-                 k: &Yaml,
-                 v: &Yaml,
-                 env: &mut Environment)
-                 -> Result<YamlType, YamlError> {
+fn apply_keyword(
+    s: &str,
+    _k: &Yaml,
+    v: &Yaml,
+    env: &mut dyn Environment,
+) -> Result<YamlType, YamlError> {
     match s {
         "while" | "if" => {
             if let Yaml::Array(ref arr) = *v {
@@ -96,9 +99,9 @@ fn apply_keyword(s: &str,
 
                             let str_len = prop_str.len();
                             if str_len == 0 {
-                                prop_str = format!("~> ({})", prop.clone());
+                                prop_str = format!("~> ({})", prop);
                             } else {
-                                prop_str = format!("{} && ({})", prop_str, prop.clone());
+                                prop_str = format!("{} && ({})", prop_str, prop);
                             }
                         }
                     } else if let Yaml::Hash(ref h) = *val {
@@ -108,9 +111,11 @@ fn apply_keyword(s: &str,
                                 return apply_nested_if_keywords(h, prop_str.clone().as_str(), env)
                             }
                             "while" => {
-                                return apply_nested_while_keywords(h,
-                                                                   prop_str.clone().as_str(),
-                                                                   env)
+                                return apply_nested_while_keywords(
+                                    h,
+                                    prop_str.clone().as_str(),
+                                    env,
+                                )
                             }
                             _ => {}
                         }
@@ -119,7 +124,7 @@ fn apply_keyword(s: &str,
             }
         }
         "return" => {
-            let result = try!(evaluate_helper(&v, env));
+            let result = evaluate_helper(&v, env)?;
             if let YamlType::Value(val) = result {
                 return Ok(YamlType::Return(val));
             }
@@ -132,7 +137,7 @@ fn apply_keyword(s: &str,
 }
 
 // evaluates the result of a fragment of YAML
-fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> Result<YamlType, YamlError> {
+fn evaluate_helper(yaml: &Yaml, env: &mut dyn Environment) -> Result<YamlType, YamlError> {
     match *yaml {
         Yaml::String(ref s) => {
             if s.as_str().contains("~>") {
@@ -140,10 +145,10 @@ fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> Result<YamlType, YamlE
                 let mut parser = Parser::new();
 
                 let mut lexer = Lexer::new();
-                try!(lexer.parse_string(split_vec[1]));
-                let ast = try!(parser.parse_to_ast(&mut lexer.state.variables,
-                                                   &mut lexer.state.operators));
-                let result = try!(ast.eval(env));
+                lexer.parse_string(split_vec[1])?;
+                let ast =
+                    parser.parse_to_ast(&mut lexer.state.variables, &mut lexer.state.operators)?;
+                let result = ast.eval(env)?;
 
                 Ok(YamlType::Value(match result {
                     Exp::Lit(Lit::Decimal(d)) => Yaml::Real(d.to_string()),
@@ -159,7 +164,7 @@ fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> Result<YamlType, YamlE
         Yaml::Array(ref arr) => {
             let mut last_value: Option<Yaml> = None;
             for v in arr {
-                let result = try!(evaluate_helper(v, env));
+                let result = evaluate_helper(v, env)?;
                 if let YamlType::Return(val) = result {
                     return Ok(YamlType::Return(val));
                 } else if let YamlType::Value(val) = result {
@@ -186,8 +191,8 @@ fn evaluate_helper(yaml: &Yaml, env: &mut Environment) -> Result<YamlType, YamlE
 }
 
 // Main function for evaluating YAML
-pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Result<Yaml, YamlError> {
-    let result = try!(evaluate_helper(yaml, env));
+pub fn evaluate(yaml: &Yaml, env: &mut dyn Environment) -> Result<Yaml, YamlError> {
+    let result = evaluate_helper(yaml, env)?;
 
     Ok(match result {
         YamlType::Value(v) => v,
@@ -197,11 +202,11 @@ pub fn evaluate(yaml: &Yaml, env: &mut Environment) -> Result<Yaml, YamlError> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use ast::Lit;
     use environment::{ASTEnvironment, Environment};
-    use super::*;
-    use yaml_rust::YamlLoader;
     use yaml_rust::yaml::Yaml;
+    use yaml_rust::YamlLoader;
 
     #[test]
     fn test_yaml_eval() {

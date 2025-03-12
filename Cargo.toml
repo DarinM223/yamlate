@@ -11,8 +11,9 @@ keywords = ["yaml", "library", "interpreter"]
 license = "MIT"
 
 [dependencies]
-yaml-rust = "0.3.3"
-lazy_static = "0.2.1"
+yaml-rust = "0.4.1"
+linked-hash-map = "0.5.6"
+lazy_static = "1.5.0"
 num = "0.1.32"
 libc = "0.2.2"
 

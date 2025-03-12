@@ -21,9 +21,10 @@ impl Parser {
     /// and pushes the result back onto the variable stack
     fn collapse_stacks(&mut self, add_op_precedence: i32) -> Result<(), YamlError> {
         let mut paren_count = 0;
-        while !self.op_stack.is_empty() &&
-              (add_op_precedence < operator_precedence(self.op_stack.front().unwrap()) ||
-               paren_count > 0) {
+        while !self.op_stack.is_empty()
+            && (add_op_precedence < operator_precedence(self.op_stack.front().unwrap())
+                || paren_count > 0)
+        {
             let operator = match self.op_stack.pop_front() {
                 Some(op) => op,
                 None => return Err(YamlError::LexError(LexError::OperatorStackError)),
@@ -38,7 +39,8 @@ impl Parser {
                         Some(var) => var,
                         None => return Err(YamlError::LexError(LexError::VariableStackError)),
                     };
-                    self.var_stack.push_front(Exp::UnaryOp(Op::Not, Box::new(var)));
+                    self.var_stack
+                        .push_front(Exp::UnaryOp(Op::Not, Box::new(var)));
                 }
 
                 // Double parameter operators
@@ -51,7 +53,7 @@ impl Parser {
                         Some(var) => var,
                         None => return Err(YamlError::LexError(LexError::VariableStackError)),
                     };
-                    let ast_node = try!(operator_to_exp(operator.as_str(), var2, var1));
+                    let ast_node = operator_to_exp(operator.as_str(), var2, var1)?;
 
                     self.var_stack.push_front(ast_node);
                 }
@@ -67,10 +69,11 @@ impl Parser {
 
     /// Takes in two deques for the variables and operators
     /// and returns the parsed AST value
-    pub fn parse_to_ast(&mut self,
-                        variables: &mut VecDeque<Exp>,
-                        operators: &mut VecDeque<String>)
-                        -> Result<Exp, YamlError> {
+    pub fn parse_to_ast(
+        &mut self,
+        variables: &mut VecDeque<Exp>,
+        operators: &mut VecDeque<String>,
+    ) -> Result<Exp, YamlError> {
         while !operators.is_empty() {
             let mut lower_precedence = false;
             let mut op_precedence = -2;
@@ -82,9 +85,10 @@ impl Parser {
 
             if !self.op_stack.is_empty() {
                 if let Some(front_operator) = self.op_stack.front() {
-                    if operator_precedence(operator.as_str()) <
-                       operator_precedence(front_operator.as_str()) &&
-                       operator_precedence(operator.as_str()) != -1 {
+                    if operator_precedence(operator.as_str())
+                        < operator_precedence(front_operator.as_str())
+                        && operator_precedence(operator.as_str()) != -1
+                    {
                         lower_precedence = true;
                         op_precedence = operator_precedence(operator.as_str());
                     }
@@ -92,7 +96,7 @@ impl Parser {
             }
 
             if lower_precedence {
-                try!(self.collapse_stacks(op_precedence));
+                self.collapse_stacks(op_precedence)?;
             }
 
             if !variables.is_empty() && operator != "(" && operator != ")" {
@@ -108,7 +112,7 @@ impl Parser {
         }
 
         if !self.op_stack.is_empty() {
-            try!(self.collapse_stacks(-2));
+            self.collapse_stacks(-2)?;
         }
 
         if self.var_stack.len() > 1 {
@@ -123,10 +127,10 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use ast::{Exp, Lit, Op};
     use errors::{LexError, YamlError};
     use std::collections::VecDeque;
-    use super::*;
 
     #[test]
     fn test_collapse_stacks() {
@@ -152,12 +156,15 @@ mod tests {
         assert_eq!(parser.collapse_stacks(-2), Ok(()));
         assert_eq!(parser.var_stack.len(), 1);
 
-        let expected_val =
-            Some(Exp::BinaryOp(Op::Times,
-                               Box::new(Exp::Lit(Lit::Number(1))),
-                               Box::new(Exp::BinaryOp(Op::Plus,
-                                                      Box::new(Exp::Lit(Lit::Number(2))),
-                                                      Box::new(Exp::Lit(Lit::Number(3)))))));
+        let expected_val = Some(Exp::BinaryOp(
+            Op::Times,
+            Box::new(Exp::Lit(Lit::Number(1))),
+            Box::new(Exp::BinaryOp(
+                Op::Plus,
+                Box::new(Exp::Lit(Lit::Number(2))),
+                Box::new(Exp::Lit(Lit::Number(3))),
+            )),
+        ));
 
         assert_eq!(parser.var_stack.pop_front(), expected_val);
     }
@@ -178,8 +185,10 @@ mod tests {
 
         let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-        assert_eq!(result,
-                   Err(YamlError::LexError(LexError::VariableStackError)));
+        assert_eq!(
+            result,
+            Err(YamlError::LexError(LexError::VariableStackError))
+        );
     }
 
     #[test]
@@ -235,16 +244,22 @@ mod tests {
         let result = parser.parse_to_ast(&mut variables, &mut operators);
 
         let not_tree = Exp::UnaryOp(Op::Not, Box::new(Exp::Lit(Lit::Number(5))));
-        let and_tree = Exp::BinaryOp(Op::And,
-                                     Box::new(Exp::Lit(Lit::Number(2))),
-                                     Box::new(Exp::Lit(Lit::Number(6))));
+        let and_tree = Exp::BinaryOp(
+            Op::And,
+            Box::new(Exp::Lit(Lit::Number(2))),
+            Box::new(Exp::Lit(Lit::Number(6))),
+        );
         let pow_tree = Exp::BinaryOp(Op::Exponent, Box::new(not_tree), Box::new(and_tree));
-        let times_tree = Exp::BinaryOp(Op::Times,
-                                       Box::new(pow_tree),
-                                       Box::new(Exp::Lit(Lit::Number(2))));
-        let expected_val = Exp::BinaryOp(Op::Plus,
-                                         Box::new(Exp::Lit(Lit::Number(1))),
-                                         Box::new(times_tree));
+        let times_tree = Exp::BinaryOp(
+            Op::Times,
+            Box::new(pow_tree),
+            Box::new(Exp::Lit(Lit::Number(2))),
+        );
+        let expected_val = Exp::BinaryOp(
+            Op::Plus,
+            Box::new(Exp::Lit(Lit::Number(1))),
+            Box::new(times_tree),
+        );
 
         assert_eq!(result, Ok(expected_val));
     }
@@ -269,9 +284,11 @@ mod tests {
 
         let result = parser.parse_to_ast(&mut variables, &mut operators);
 
-        let expected_val = Ok(Exp::BinaryOp(Op::Plus,
-                                            Box::new(Exp::Lit(Lit::Number(1))),
-                                            Box::new(Exp::Lit(Lit::Number(2)))));
+        let expected_val = Ok(Exp::BinaryOp(
+            Op::Plus,
+            Box::new(Exp::Lit(Lit::Number(1))),
+            Box::new(Exp::Lit(Lit::Number(2))),
+        ));
 
         assert_eq!(result, expected_val);
     }

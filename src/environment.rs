@@ -40,7 +40,9 @@ pub struct ASTEnvironment {
 
 impl ASTEnvironment {
     pub fn new() -> ASTEnvironment {
-        ASTEnvironment { stack: vec![HashMap::new()] }
+        ASTEnvironment {
+            stack: vec![HashMap::new()],
+        }
     }
 }
 
@@ -90,8 +92,8 @@ impl Environment for ASTEnvironment {
 
 #[cfg(test)]
 mod tests {
-    use ast::Lit;
     use super::{ASTEnvironment, Environment};
+    use ast::Lit;
 
     #[test]
     fn test_bad_value_empty_stack() {

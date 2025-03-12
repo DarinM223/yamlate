@@ -2,6 +2,7 @@
 extern crate lazy_static;
 
 extern crate libc;
+extern crate linked_hash_map;
 extern crate num;
 extern crate yaml_rust;
 

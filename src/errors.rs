@@ -88,35 +88,47 @@ impl EvalError {
     pub fn description(&self) -> String {
         match *self {
             EvalError::InvalidUnOp(op, ref lit) => {
-                format!("Invalid type ({:?}) applied to operator {:?}",
-                        lit.clone(),
-                        op)
+                format!(
+                    "Invalid type ({:?}) applied to operator {:?}",
+                    lit.clone(),
+                    op
+                )
             }
             EvalError::InvalidBinOp(op, ref lit1, ref lit2) => {
-                format!("Invalid types ({:?}, {:?}) applied to operator {:?}",
-                        lit1.clone(),
-                        lit2.clone(),
-                        op)
+                format!(
+                    "Invalid types ({:?}, {:?}) applied to operator {:?}",
+                    lit1.clone(),
+                    lit2.clone(),
+                    op
+                )
             }
             EvalError::CannotReduceUnOp(op, ref exp) => {
-                format!("Subexpression ({:?}) cannot be reduced to a value for unary operator {:?}",
-                        exp.clone(),
-                        op)
+                format!(
+                    "Subexpression ({:?}) cannot be reduced to a value for unary operator {:?}",
+                    exp.clone(),
+                    op
+                )
             }
             EvalError::CannotReduceBinOp(op, ref exp1, ref exp2) => {
-                format!("Subexpressions ({:?}, {:?}) cannot be reduced to a value for binary \
+                format!(
+                    "Subexpressions ({:?}, {:?}) cannot be reduced to a value for binary \
                          operator {:?}",
-                        exp1.clone(),
-                        exp2.clone(),
-                        op)
+                    exp1.clone(),
+                    exp2.clone(),
+                    op
+                )
             }
             EvalError::CannotReduceAssign(ref exp) => {
-                format!("Subexpression ({:?}) cannot be reduced to a value for assigning",
-                        exp.clone())
+                format!(
+                    "Subexpression ({:?}) cannot be reduced to a value for assigning",
+                    exp.clone()
+                )
             }
             EvalError::CannotReduceDeclare(ref exp) => {
-                format!("Subexpression ({:?}) cannot be reduced to a value for declaring",
-                        exp.clone())
+                format!(
+                    "Subexpression ({:?}) cannot be reduced to a value for declaring",
+                    exp.clone()
+                )
             }
             EvalError::VarNotInEnv(ref name) => {
                 format!("Variable {:?} not in environment", name.clone())

@@ -17,24 +17,24 @@ else:
 yamlate = Yamlate(lib)
 
 with yamlate.new_environment() as environment:
-    environment.set_integer('another_beetle_nearby', 1)
-    environment.set_string('current_season', 'spring')
+    environment.set_integer(b'another_beetle_nearby', 1)
+    environment.set_string(b'current_season', b'spring')
 
     with open('../examples/bug.yaml', 'r') as yaml_file:
-        data = yaml_file.read()
+        data = yaml_file.read().encode('utf-8')
 
         with yamlate.new_yaml_from_str(data) as root_yaml:
-            with root_yaml.hash_get('cricket') as cricket_yaml:
-                with cricket_yaml.hash_get('wing_color') as wing_yaml:
+            with root_yaml.hash_get(b'cricket') as cricket_yaml:
+                with cricket_yaml.hash_get(b'wing_color') as wing_yaml:
                     with wing_yaml.evaluate(environment) as cricket_wing_result:
                         # should print 'red'
-                        print cricket_wing_result.get_string()
+                        print(cricket_wing_result.get_string())
 
-            with root_yaml.hash_get('beetle') as beetle_yaml:
-                with beetle_yaml.hash_get('wing_color') as wing_yaml:
+            with root_yaml.hash_get(b'beetle') as beetle_yaml:
+                with beetle_yaml.hash_get(b'wing_color') as wing_yaml:
                     with wing_yaml.evaluate(environment) as beetle_wing_result:
                         # should print 'blue'
-                        print beetle_wing_result.get_string()
+                        print(beetle_wing_result.get_string())
 
                         # should print '0'
-                        print environment.get_integer('another_beetle_nearby')
+                        print(environment.get_integer(b'another_beetle_nearby'))

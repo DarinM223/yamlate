@@ -42,14 +42,15 @@ impl LexerState {
     }
 }
 
-
 pub struct Lexer {
     pub state: LexerState,
 }
 
 impl Lexer {
     pub fn new() -> Lexer {
-        Lexer { state: LexerState::new() }
+        Lexer {
+            state: LexerState::new(),
+        }
     }
 
     /// Parses the contents of the string and adds the
@@ -63,7 +64,7 @@ impl Lexer {
                     self.state.curr_chars.push(ch);
                 }
             } else {
-                try!(append_ch(ch, &mut self.state));
+                append_ch(ch, &mut self.state)?;
             }
         }
 
@@ -94,12 +95,11 @@ impl Lexer {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
+    use super::*;
     use ast::{Exp, Lit};
     use std::collections::VecDeque;
-    use super::*;
 
     #[test]
     fn test_no_paren() {
@@ -107,13 +107,15 @@ mod tests {
         let mut lexer = Lexer::new();
         assert_eq!(lexer.parse_string(s), Ok(()));
 
-        let variable_result: VecDeque<Exp> = vec![Exp::Variable("a".to_owned()),
-                                                  Exp::Lit(Lit::Number(2)),
-                                                  Exp::Variable("b".to_owned()),
-                                                  Exp::Lit(Lit::Number(3))]
-            .into_iter()
-            .rev()
-            .collect();
+        let variable_result: VecDeque<Exp> = vec![
+            Exp::Variable("a".to_owned()),
+            Exp::Lit(Lit::Number(2)),
+            Exp::Variable("b".to_owned()),
+            Exp::Lit(Lit::Number(3)),
+        ]
+        .into_iter()
+        .rev()
+        .collect();
         assert_eq!(lexer.state.variables, variable_result);
 
         let operator_result: VecDeque<String> = vec!["+", "-", "+"]
@@ -130,22 +132,24 @@ mod tests {
         let mut lexer = Lexer::new();
         assert_eq!(lexer.parse_string(s), Ok(()));
 
-        let variable_result: VecDeque<Exp> = vec![Exp::Variable("a".to_owned()),
-                                                  Exp::Lit(Lit::Number(2)),
-                                                  Exp::Variable("b".to_owned()),
-                                                  Exp::Lit(Lit::Number(3)),
-                                                  Exp::Lit(Lit::Number(5))]
-            .into_iter()
-            .rev()
-            .collect();
+        let variable_result: VecDeque<Exp> = vec![
+            Exp::Variable("a".to_owned()),
+            Exp::Lit(Lit::Number(2)),
+            Exp::Variable("b".to_owned()),
+            Exp::Lit(Lit::Number(3)),
+            Exp::Lit(Lit::Number(5)),
+        ]
+        .into_iter()
+        .rev()
+        .collect();
         assert_eq!(lexer.state.variables, variable_result);
 
-        let operator_result: VecDeque<String> = vec!["(", "+", "(", "-", ")", "+", "(", "*", ")",
-                                                     ")"]
-            .into_iter()
-            .rev()
-            .map(|s| s.to_owned())
-            .collect();
+        let operator_result: VecDeque<String> =
+            vec!["(", "+", "(", "-", ")", "+", "(", "*", ")", ")"]
+                .into_iter()
+                .rev()
+                .map(|s| s.to_owned())
+                .collect();
         assert_eq!(lexer.state.operators, operator_result);
     }
 
@@ -155,22 +159,24 @@ mod tests {
         let mut lexer = Lexer::new();
         assert_eq!(lexer.parse_string(s), Ok(()));
 
-        let variable_result: VecDeque<Exp> = vec![Exp::Variable("a".to_owned()),
-                                                  Exp::Lit(Lit::Number(2)),
-                                                  Exp::Variable("b".to_owned()),
-                                                  Exp::Lit(Lit::Number(3)),
-                                                  Exp::Lit(Lit::Number(5))]
-            .into_iter()
-            .rev()
-            .collect();
+        let variable_result: VecDeque<Exp> = vec![
+            Exp::Variable("a".to_owned()),
+            Exp::Lit(Lit::Number(2)),
+            Exp::Variable("b".to_owned()),
+            Exp::Lit(Lit::Number(3)),
+            Exp::Lit(Lit::Number(5)),
+        ]
+        .into_iter()
+        .rev()
+        .collect();
         assert_eq!(lexer.state.variables, variable_result);
 
-        let operator_result: VecDeque<String> = vec!["(", "==", "(", "-", ")", "+", "(", "!=",
-                                                     ")", ")"]
-            .into_iter()
-            .rev()
-            .map(|s| s.to_owned())
-            .collect();
+        let operator_result: VecDeque<String> =
+            vec!["(", "==", "(", "-", ")", "+", "(", "!=", ")", ")"]
+                .into_iter()
+                .rev()
+                .map(|s| s.to_owned())
+                .collect();
         assert_eq!(lexer.state.operators, operator_result);
     }
 
@@ -180,14 +186,16 @@ mod tests {
         let mut lexer = Lexer::new();
         assert_eq!(lexer.parse_string(s), Ok(()));
 
-        let variable_result: VecDeque<Exp> = vec![Exp::Variable("a".to_owned()),
-                                                  Exp::Lit(Lit::Number(2)),
-                                                  Exp::Variable("b".to_owned()),
-                                                  Exp::Lit(Lit::Number(2)),
-                                                  Exp::Lit(Lit::Number(5))]
-            .into_iter()
-            .rev()
-            .collect();
+        let variable_result: VecDeque<Exp> = vec![
+            Exp::Variable("a".to_owned()),
+            Exp::Lit(Lit::Number(2)),
+            Exp::Variable("b".to_owned()),
+            Exp::Lit(Lit::Number(2)),
+            Exp::Lit(Lit::Number(5)),
+        ]
+        .into_iter()
+        .rev()
+        .collect();
         assert_eq!(lexer.state.variables, variable_result);
 
         let operator_result: VecDeque<String> = vec!["(", "+", "-", "^", ")", "=="]
@@ -204,12 +212,13 @@ mod tests {
         let mut lexer = Lexer::new();
         assert_eq!(lexer.parse_string(s), Ok(()));
 
-        let variable_result: VecDeque<Exp> = vec![Exp::Lit(Lit::Str("Hello world1234 + "
-                                                      .to_owned())),
-                                                  Exp::Lit(Lit::Str("bye123".to_owned()))]
-            .into_iter()
-            .rev()
-            .collect();
+        let variable_result: VecDeque<Exp> = vec![
+            Exp::Lit(Lit::Str("Hello world1234 + ".to_owned())),
+            Exp::Lit(Lit::Str("bye123".to_owned())),
+        ]
+        .into_iter()
+        .rev()
+        .collect();
         assert_eq!(lexer.state.variables, variable_result);
 
         let operator_result: VecDeque<String> = vec!["(", "+", ")"]
@@ -226,12 +235,14 @@ mod tests {
         let mut lexer = Lexer::new();
         assert_eq!(lexer.parse_string(s), Ok(()));
 
-        let variable_result: VecDeque<Exp> = vec![Exp::Lit(Lit::Decimal(1.23)),
-                                                  Exp::Lit(Lit::Decimal(3.12)),
-                                                  Exp::Lit(Lit::Decimal(123.45678))]
-            .into_iter()
-            .rev()
-            .collect();
+        let variable_result: VecDeque<Exp> = vec![
+            Exp::Lit(Lit::Decimal(1.23)),
+            Exp::Lit(Lit::Decimal(3.12)),
+            Exp::Lit(Lit::Decimal(123.45678)),
+        ]
+        .into_iter()
+        .rev()
+        .collect();
         assert_eq!(lexer.state.variables, variable_result);
     }
 }

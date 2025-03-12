@@ -1,7 +1,7 @@
+use ast::lit::Lit;
 use ast::Op;
 use environment::Environment;
 use errors::{EvalError, YamlError};
-use ast::lit::Lit;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Exp {
@@ -21,56 +21,68 @@ pub enum Exp {
 
 impl Exp {
     /// Evaluates a expression and returns a Result type wrapping an expression
-    pub fn eval(&self, env: &mut Environment) -> Result<Exp, YamlError> {
+    pub fn eval(&self, env: &mut dyn Environment) -> Result<Exp, YamlError> {
         match *self {
-            Exp::Variable(ref name) => {
-                match env.get(name.as_str()) {
-                    Some(lit) => Ok(Exp::Lit(lit)),
-                    None => Err(YamlError::EvalError(EvalError::VarNotInEnv(name.clone()))),
-                }
-            }
+            Exp::Variable(ref name) => match env.get(name.as_str()) {
+                Some(lit) => Ok(Exp::Lit(lit)),
+                None => Err(YamlError::EvalError(EvalError::VarNotInEnv(name.clone()))),
+            },
             Exp::Declare(ref name, ref exp) => {
-                if let Exp::Lit(value) = try!(exp.eval(env)) {
+                if let Exp::Lit(value) = exp.eval(env)? {
                     env.set(name.as_str(), value.clone());
                     Ok(Exp::Lit(value))
                 } else {
-                    Err(YamlError::EvalError(EvalError::CannotReduceDeclare(exp.clone())))
+                    Err(YamlError::EvalError(EvalError::CannotReduceDeclare(
+                        exp.clone(),
+                    )))
                 }
             }
             Exp::Assign(ref name, ref exp) => {
-                if let Exp::Lit(value) = try!(exp.eval(env)) {
+                if let Exp::Lit(value) = exp.eval(env)? {
                     env.assign(name.as_str(), value.clone());
                     Ok(Exp::Lit(value))
                 } else {
-                    Err(YamlError::EvalError(EvalError::CannotReduceAssign(exp.clone())))
+                    Err(YamlError::EvalError(EvalError::CannotReduceAssign(
+                        exp.clone(),
+                    )))
                 }
             }
             Exp::UnaryOp(ref op, ref exp) => {
-                if let Exp::Lit(value) = try!(exp.eval(env)) {
+                if let Exp::Lit(value) = exp.eval(env)? {
                     match *op {
-                        Op::Not => Ok(Exp::Lit(try!(!value))),
+                        Op::Not => Ok(Exp::Lit((!value)?)),
                         // Non-unary operators (for exhaustiveness checking)
-                        Op::Plus | Op::Minus | Op::Times | Op::Divide | Op::Modulo |
-                        Op::Exponent | Op::And | Op::Or | Op::Equal | Op::NotEqual => {
+                        Op::Plus
+                        | Op::Minus
+                        | Op::Times
+                        | Op::Divide
+                        | Op::Modulo
+                        | Op::Exponent
+                        | Op::And
+                        | Op::Or
+                        | Op::Equal
+                        | Op::NotEqual => {
                             return Err(YamlError::EvalError(EvalError::NotUnOp(op.clone())))
                         }
                     }
                 } else {
-                    Err(YamlError::EvalError(EvalError::CannotReduceUnOp(op.clone(), exp.clone())))
+                    Err(YamlError::EvalError(EvalError::CannotReduceUnOp(
+                        op.clone(),
+                        exp.clone(),
+                    )))
                 }
             }
             Exp::BinaryOp(ref op, ref exp1, ref exp2) => {
-                if let (Exp::Lit(val1), Exp::Lit(val2)) = (try!(exp1.eval(env)),
-                                                           try!(exp2.eval(env))) {
+                if let (Exp::Lit(val1), Exp::Lit(val2)) = (exp1.eval(env)?, exp2.eval(env)?) {
                     Ok(Exp::Lit(match *op {
-                        Op::Plus => try!(val1 + val2),
-                        Op::Minus => try!(val1 - val2),
-                        Op::Times => try!(val1 * val2),
-                        Op::Divide => try!(val1 / val2),
-                        Op::Modulo => try!(val1 % val2),
-                        Op::Exponent => try!(val1.exp(val2)),
-                        Op::And => try!(val1.and(val2)),
-                        Op::Or => try!(val1.or(val2)),
+                        Op::Plus => (val1 + val2)?,
+                        Op::Minus => (val1 - val2)?,
+                        Op::Times => (val1 * val2)?,
+                        Op::Divide => (val1 / val2)?,
+                        Op::Modulo => (val1 % val2)?,
+                        Op::Exponent => val1.exp(val2)?,
+                        Op::And => val1.and(val2)?,
+                        Op::Or => val1.or(val2)?,
                         Op::Equal => Lit::Bool(val1 == val2),
                         Op::NotEqual => Lit::Bool(val1 != val2),
                         // Non-binary operators (for exhaustiveness checking)
@@ -79,9 +91,11 @@ impl Exp {
                         }
                     }))
                 } else {
-                    Err(YamlError::EvalError(EvalError::CannotReduceBinOp(op.clone(),
-                                                                          exp1.clone(),
-                                                                          exp2.clone())))
+                    Err(YamlError::EvalError(EvalError::CannotReduceBinOp(
+                        op.clone(),
+                        exp1.clone(),
+                        exp2.clone(),
+                    )))
                 }
             }
             ref lit @ Exp::Lit(_) => Ok(lit.clone()),
@@ -91,8 +105,8 @@ impl Exp {
 
 #[cfg(test)]
 mod tests {
-    use environment::{ASTEnvironment, Environment};
     use ast::{Exp, Lit, Op};
+    use environment::{ASTEnvironment, Environment};
 
     #[test]
     fn test_arith_ast() {
@@ -108,15 +122,21 @@ mod tests {
 
         let mut env = ASTEnvironment::new();
 
-        let sub_tree = Exp::BinaryOp(Op::Minus,
-                                     Box::new(Exp::Lit(Lit::Number(3))),
-                                     Box::new(Exp::Lit(Lit::Number(2))));
-        let add_tree = Exp::BinaryOp(Op::Plus,
-                                     Box::new(sub_tree),
-                                     Box::new(Exp::Lit(Lit::Number(6))));
-        let times_tree = Exp::BinaryOp(Op::Times,
-                                       Box::new(Exp::Lit(Lit::Number(5))),
-                                       Box::new(add_tree));
+        let sub_tree = Exp::BinaryOp(
+            Op::Minus,
+            Box::new(Exp::Lit(Lit::Number(3))),
+            Box::new(Exp::Lit(Lit::Number(2))),
+        );
+        let add_tree = Exp::BinaryOp(
+            Op::Plus,
+            Box::new(sub_tree),
+            Box::new(Exp::Lit(Lit::Number(6))),
+        );
+        let times_tree = Exp::BinaryOp(
+            Op::Times,
+            Box::new(Exp::Lit(Lit::Number(5))),
+            Box::new(add_tree),
+        );
 
         assert_eq!(times_tree.eval(&mut env), Ok(Exp::Lit(Lit::Number(35))));
     }
@@ -139,10 +159,17 @@ mod tests {
         env.set("c", Lit::Number(2));
         env.set("d", Lit::Number(6));
 
-        let (a, b, c, d) = ("a".to_owned(), "b".to_owned(), "c".to_owned(), "d".to_owned());
-        let sub_tree = Exp::BinaryOp(Op::Minus,
-                                     Box::new(Exp::Variable(b)),
-                                     Box::new(Exp::Variable(c)));
+        let (a, b, c, d) = (
+            "a".to_owned(),
+            "b".to_owned(),
+            "c".to_owned(),
+            "d".to_owned(),
+        );
+        let sub_tree = Exp::BinaryOp(
+            Op::Minus,
+            Box::new(Exp::Variable(b)),
+            Box::new(Exp::Variable(c)),
+        );
         let add_tree = Exp::BinaryOp(Op::Plus, Box::new(sub_tree), Box::new(Exp::Variable(d)));
         let times_tree = Exp::BinaryOp(Op::Times, Box::new(Exp::Variable(a)), Box::new(add_tree));
 
@@ -168,9 +195,11 @@ mod tests {
 
         let (a, b, c) = ("a".to_owned(), "b".to_owned(), "c".to_owned());
 
-        let sub_tree = Exp::BinaryOp(Op::Minus,
-                                     Box::new(Exp::Lit(Lit::Decimal(1.5))),
-                                     Box::new(Exp::Variable(b)));
+        let sub_tree = Exp::BinaryOp(
+            Op::Minus,
+            Box::new(Exp::Lit(Lit::Decimal(1.5))),
+            Box::new(Exp::Variable(b)),
+        );
         let add_tree = Exp::BinaryOp(Op::Plus, Box::new(sub_tree), Box::new(Exp::Variable(c)));
         let times_tree = Exp::BinaryOp(Op::Times, Box::new(Exp::Variable(a)), Box::new(add_tree));
 
@@ -197,12 +226,16 @@ mod tests {
         // results in x being set to 3 in the original scope
 
         let mut env = ASTEnvironment::new();
-        let add_tree = Exp::BinaryOp(Op::Plus,
-                                     Box::new(Exp::Lit(Lit::Number(2))),
-                                     Box::new(Exp::Lit(Lit::Number(3))));
-        let times_tree = Exp::BinaryOp(Op::Times,
-                                       Box::new(Exp::Lit(Lit::Number(10))),
-                                       Box::new(add_tree));
+        let add_tree = Exp::BinaryOp(
+            Op::Plus,
+            Box::new(Exp::Lit(Lit::Number(2))),
+            Box::new(Exp::Lit(Lit::Number(3))),
+        );
+        let times_tree = Exp::BinaryOp(
+            Op::Times,
+            Box::new(Exp::Lit(Lit::Number(10))),
+            Box::new(add_tree),
+        );
         let declare_tree = Exp::Declare("x".to_owned(), Box::new(times_tree));
 
         assert_eq!(declare_tree.eval(&mut env), Ok(Exp::Lit(Lit::Number(50))));
@@ -210,9 +243,11 @@ mod tests {
 
         env.push();
 
-        let add_tree = Exp::BinaryOp(Op::Plus,
-                                     Box::new(Exp::Lit(Lit::Number(1))),
-                                     Box::new(Exp::Lit(Lit::Number(2))));
+        let add_tree = Exp::BinaryOp(
+            Op::Plus,
+            Box::new(Exp::Lit(Lit::Number(1))),
+            Box::new(Exp::Lit(Lit::Number(2))),
+        );
         let assign_tree = Exp::Assign("x".to_owned(), Box::new(add_tree));
 
         assert_eq!(assign_tree.eval(&mut env), Ok(Exp::Lit(Lit::Number(3))));
@@ -227,41 +262,52 @@ mod tests {
 
         // Test number equality
 
-        let ast = Exp::BinaryOp(Op::Equal,
-                                Box::new(Exp::Lit(Lit::Number(5))),
-                                Box::new(Exp::Lit(Lit::Number(5))));
+        let ast = Exp::BinaryOp(
+            Op::Equal,
+            Box::new(Exp::Lit(Lit::Number(5))),
+            Box::new(Exp::Lit(Lit::Number(5))),
+        );
         assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(true))));
 
-        let ast = Exp::BinaryOp(Op::Equal,
-                                Box::new(Exp::Lit(Lit::Number(5))),
-                                Box::new(Exp::Lit(Lit::Number(4))));
+        let ast = Exp::BinaryOp(
+            Op::Equal,
+            Box::new(Exp::Lit(Lit::Number(5))),
+            Box::new(Exp::Lit(Lit::Number(4))),
+        );
         assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(false))));
 
         // Test decimal equality
 
-        let ast = Exp::BinaryOp(Op::Equal,
-                                Box::new(Exp::Lit(Lit::Decimal(2.56))),
-                                Box::new(Exp::Lit(Lit::Decimal(2.56))));
+        let ast = Exp::BinaryOp(
+            Op::Equal,
+            Box::new(Exp::Lit(Lit::Decimal(2.56))),
+            Box::new(Exp::Lit(Lit::Decimal(2.56))),
+        );
         assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(true))));
 
-        let ast = Exp::BinaryOp(Op::Equal,
-                                Box::new(Exp::Lit(Lit::Decimal(2.56))),
-                                Box::new(Exp::Lit(Lit::Decimal(2.55))));
+        let ast = Exp::BinaryOp(
+            Op::Equal,
+            Box::new(Exp::Lit(Lit::Decimal(2.56))),
+            Box::new(Exp::Lit(Lit::Decimal(2.55))),
+        );
         assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(false))));
 
         // Test string equality
 
-        let ast = Exp::BinaryOp(Op::Equal,
-                                Box::new(Exp::Lit(Lit::Str("Hello".to_owned()))),
-                                Box::new(Exp::Lit(Lit::Str("Hello".to_owned()))));
+        let ast = Exp::BinaryOp(
+            Op::Equal,
+            Box::new(Exp::Lit(Lit::Str("Hello".to_owned()))),
+            Box::new(Exp::Lit(Lit::Str("Hello".to_owned()))),
+        );
         assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(true))));
 
-        let ast = Exp::BinaryOp(Op::Equal,
-                                Box::new(Exp::Lit(Lit::Str("Hello".to_owned()))),
-                                Box::new(Exp::Lit(Lit::Str("hello".to_owned()))));
+        let ast = Exp::BinaryOp(
+            Op::Equal,
+            Box::new(Exp::Lit(Lit::Str("Hello".to_owned()))),
+            Box::new(Exp::Lit(Lit::Str("hello".to_owned()))),
+        );
         assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(false))));
     }
-
 
     #[test]
     fn test_boolean_operators() {
@@ -269,26 +315,34 @@ mod tests {
 
         // Test and operator
 
-        let ast = Exp::BinaryOp(Op::And,
-                                Box::new(Exp::Lit(Lit::Bool(true))),
-                                Box::new(Exp::Lit(Lit::Bool(true))));
+        let ast = Exp::BinaryOp(
+            Op::And,
+            Box::new(Exp::Lit(Lit::Bool(true))),
+            Box::new(Exp::Lit(Lit::Bool(true))),
+        );
         assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(true))));
 
-        let ast = Exp::BinaryOp(Op::And,
-                                Box::new(Exp::Lit(Lit::Bool(true))),
-                                Box::new(Exp::Lit(Lit::Bool(false))));
+        let ast = Exp::BinaryOp(
+            Op::And,
+            Box::new(Exp::Lit(Lit::Bool(true))),
+            Box::new(Exp::Lit(Lit::Bool(false))),
+        );
         assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(false))));
 
         // Test or operator
 
-        let ast = Exp::BinaryOp(Op::Or,
-                                Box::new(Exp::Lit(Lit::Bool(true))),
-                                Box::new(Exp::Lit(Lit::Bool(false))));
+        let ast = Exp::BinaryOp(
+            Op::Or,
+            Box::new(Exp::Lit(Lit::Bool(true))),
+            Box::new(Exp::Lit(Lit::Bool(false))),
+        );
         assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(true))));
 
-        let ast = Exp::BinaryOp(Op::Or,
-                                Box::new(Exp::Lit(Lit::Bool(false))),
-                                Box::new(Exp::Lit(Lit::Bool(false))));
+        let ast = Exp::BinaryOp(
+            Op::Or,
+            Box::new(Exp::Lit(Lit::Bool(false))),
+            Box::new(Exp::Lit(Lit::Bool(false))),
+        );
         assert_eq!(ast.eval(&mut env), Ok(Exp::Lit(Lit::Bool(false))));
     }
 }
