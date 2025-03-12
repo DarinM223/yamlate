@@ -61,13 +61,11 @@ impl Exp {
                         | Op::And
                         | Op::Or
                         | Op::Equal
-                        | Op::NotEqual => {
-                            return Err(YamlError::EvalError(EvalError::NotUnOp(op.clone())))
-                        }
+                        | Op::NotEqual => Err(YamlError::EvalError(EvalError::NotUnOp(*op))),
                     }
                 } else {
                     Err(YamlError::EvalError(EvalError::CannotReduceUnOp(
-                        op.clone(),
+                        *op,
                         exp.clone(),
                     )))
                 }
@@ -86,13 +84,11 @@ impl Exp {
                         Op::Equal => Lit::Bool(val1 == val2),
                         Op::NotEqual => Lit::Bool(val1 != val2),
                         // Non-binary operators (for exhaustiveness checking)
-                        Op::Not => {
-                            return Err(YamlError::EvalError(EvalError::NotBinOp(op.clone())))
-                        }
+                        Op::Not => return Err(YamlError::EvalError(EvalError::NotBinOp(*op))),
                     }))
                 } else {
                     Err(YamlError::EvalError(EvalError::CannotReduceBinOp(
-                        op.clone(),
+                        *op,
                         exp1.clone(),
                         exp2.clone(),
                     )))

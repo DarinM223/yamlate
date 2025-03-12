@@ -115,12 +115,10 @@ impl Parser {
             self.collapse_stacks(-2)?;
         }
 
-        if self.var_stack.len() > 1 {
-            Err(YamlError::LexError(LexError::Incomplete))
-        } else if self.var_stack.len() == 1 {
-            Ok(self.var_stack.pop_front().unwrap())
-        } else {
-            Err(YamlError::LexError(LexError::ResultNotLiteral))
+        match self.var_stack.len().cmp(&1) {
+            std::cmp::Ordering::Greater => Err(YamlError::LexError(LexError::Incomplete)),
+            std::cmp::Ordering::Equal => Ok(self.var_stack.pop_front().unwrap()),
+            std::cmp::Ordering::Less => Err(YamlError::LexError(LexError::ResultNotLiteral)),
         }
     }
 }

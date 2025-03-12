@@ -124,7 +124,7 @@ fn apply_keyword(
             }
         }
         "return" => {
-            let result = evaluate_helper(&v, env)?;
+            let result = evaluate_helper(v, env)?;
             if let YamlType::Value(val) = result {
                 return Ok(YamlType::Return(val));
             }
@@ -186,7 +186,7 @@ fn evaluate_helper(yaml: &Yaml, env: &mut dyn Environment) -> Result<YamlType, Y
             }
             Ok(YamlType::Value(Yaml::Hash(h.clone())))
         }
-        ref val @ _ => Ok(YamlType::Value(val.clone())),
+        ref val => Ok(YamlType::Value(val.clone())),
     }
 }
 

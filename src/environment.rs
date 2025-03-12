@@ -46,6 +46,12 @@ impl ASTEnvironment {
     }
 }
 
+impl Default for ASTEnvironment {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Environment for ASTEnvironment {
     fn get(&self, var: &str) -> Option<Lit> {
         for i in (0..self.stack.len()).rev() {

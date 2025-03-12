@@ -163,7 +163,7 @@ impl TokenBuilder for DotBuilder {
 pub fn append_ch(ch: char, state: &mut LexerState) -> Result<(), YamlError> {
     if ch.is_alphabetic() || ch == '_' {
         LetterBuilder.append(ch, state)
-    } else if ch.is_digit(10) {
+    } else if ch.is_ascii_digit() {
         DigitBuilder.append(ch, state)
     } else if ch == '\"' {
         QuoteBuilder.append(ch, state)

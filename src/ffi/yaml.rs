@@ -2,21 +2,22 @@ use environment::ASTEnvironment;
 use ffi::types::{Error, FFIArrayReturnValue, FFIReturnValue, YamlType};
 use libc::c_char;
 use std::ffi::{CStr, CString};
-use std::mem::{forget, transmute};
+use std::mem::forget;
 use std::ptr;
 use yaml::evaluate;
 use yaml_rust::yaml::Yaml;
 use yaml_rust::YamlLoader;
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_create_from_string(s: *const c_char) -> FFIReturnValue<*const Yaml> {
-    let yaml_str: String = unsafe { CStr::from_ptr(s).to_string_lossy().into_owned() };
+pub unsafe extern "C" fn yaml_create_from_string(s: *const c_char) -> FFIReturnValue<*const Yaml> {
+    let yaml_str: String = CStr::from_ptr(s).to_string_lossy().into_owned();
     let mut docs = YamlLoader::load_from_str(yaml_str.as_str()).unwrap();
 
     let doc_option = docs.pop();
 
     if let Some(doc) = doc_option {
-        let yaml_ptr = unsafe { transmute(Box::new(doc)) };
+        let yaml_ptr = Box::into_raw(Box::new(doc));
 
         FFIReturnValue {
             value: yaml_ptr,
@@ -30,13 +31,15 @@ pub extern "C" fn yaml_create_from_string(s: *const c_char) -> FFIReturnValue<*c
     }
 }
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_destroy(yaml: *const Yaml) {
-    unsafe { transmute::<*const Yaml, Box<Yaml>>(yaml) };
+pub unsafe extern "C" fn yaml_destroy(yaml: *mut Yaml) {
+    drop(Box::from_raw(yaml))
 }
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_evaluate(
+pub unsafe extern "C" fn yaml_evaluate(
     yaml: *const Yaml,
     env: *mut ASTEnvironment,
 ) -> FFIReturnValue<*const Yaml> {
@@ -45,21 +48,20 @@ pub extern "C" fn yaml_evaluate(
 
     if let Ok(result) = evaluate(yaml, environment) {
         FFIReturnValue {
-            value: unsafe { transmute::<Box<Yaml>, *const Yaml>(Box::new(result)) },
+            value: Box::into_raw(Box::new(result)),
             error: Error::None as i32,
         }
     } else {
         FFIReturnValue {
-            value: 0 as *const Yaml,
+            value: std::ptr::null::<Yaml>(),
             error: Error::EvalError as i32,
         }
     }
 }
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_type(yaml: *const Yaml) -> i32 {
-    let yaml = unsafe { &*yaml };
-
+pub unsafe extern "C" fn yaml_type(yaml: *const Yaml) -> i32 {
     match *yaml {
         Yaml::Real(_) => YamlType::Real as i32,
         Yaml::Integer(_) => YamlType::Integer as i32,
@@ -72,10 +74,9 @@ pub extern "C" fn yaml_type(yaml: *const Yaml) -> i32 {
     }
 }
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_integer_get(yaml: *const Yaml) -> FFIReturnValue<i32> {
-    let yaml = unsafe { &*yaml };
-
+pub unsafe extern "C" fn yaml_integer_get(yaml: *const Yaml) -> FFIReturnValue<i32> {
     if let Yaml::Integer(i) = *yaml {
         FFIReturnValue {
             value: i as i32,
@@ -89,10 +90,9 @@ pub extern "C" fn yaml_integer_get(yaml: *const Yaml) -> FFIReturnValue<i32> {
     }
 }
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_decimal_get(yaml: *const Yaml) -> FFIReturnValue<f64> {
-    let yaml = unsafe { &*yaml };
-
+pub unsafe extern "C" fn yaml_decimal_get(yaml: *const Yaml) -> FFIReturnValue<f64> {
     if let Yaml::Real(ref s) = *yaml {
         FFIReturnValue {
             value: s.parse::<f64>().unwrap_or(0.0),
@@ -106,10 +106,9 @@ pub extern "C" fn yaml_decimal_get(yaml: *const Yaml) -> FFIReturnValue<f64> {
     }
 }
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_string_get(yaml: *const Yaml) -> FFIReturnValue<*const c_char> {
-    let yaml = unsafe { &*yaml };
-
+pub unsafe extern "C" fn yaml_string_get(yaml: *const Yaml) -> FFIReturnValue<*const c_char> {
     if let Yaml::String(ref s) = *yaml {
         let c_str = CString::new(s.as_str()).unwrap().into_raw();
 
@@ -125,10 +124,11 @@ pub extern "C" fn yaml_string_get(yaml: *const Yaml) -> FFIReturnValue<*const c_
     }
 }
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_hash_keys(yaml: *const Yaml) -> FFIArrayReturnValue<*const *const c_char> {
-    let yaml = unsafe { &*yaml };
-
+pub unsafe extern "C" fn yaml_hash_keys(
+    yaml: *const Yaml,
+) -> FFIArrayReturnValue<*const *const c_char> {
     let mut keys: Vec<*const c_char> = Vec::new();
 
     if let Yaml::Hash(ref h) = *yaml {
@@ -160,17 +160,17 @@ pub extern "C" fn yaml_hash_keys(yaml: *const Yaml) -> FFIArrayReturnValue<*cons
     }
 }
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_hash_get(
+pub unsafe extern "C" fn yaml_hash_get(
     yaml: *const Yaml,
     key: *const c_char,
 ) -> FFIReturnValue<*const Yaml> {
-    let yaml = unsafe { &*yaml };
     let hash_key: String = unsafe { CStr::from_ptr(key).to_string_lossy().into_owned() };
 
     if let Yaml::Hash(ref h) = *yaml {
         if let Some(result) = h.get(&Yaml::String(hash_key)) {
-            let yaml_ptr = unsafe { transmute(Box::new(result.clone())) };
+            let yaml_ptr = Box::into_raw(Box::new(result.clone()));
 
             FFIReturnValue {
                 value: yaml_ptr,
@@ -190,10 +190,9 @@ pub extern "C" fn yaml_hash_get(
     }
 }
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_array_len(yaml: *const Yaml) -> FFIReturnValue<i32> {
-    let yaml = unsafe { &*yaml };
-
+pub unsafe extern "C" fn yaml_array_len(yaml: *const Yaml) -> FFIReturnValue<i32> {
     if let Yaml::Array(ref a) = *yaml {
         FFIReturnValue {
             value: a.len() as i32,
@@ -207,13 +206,15 @@ pub extern "C" fn yaml_array_len(yaml: *const Yaml) -> FFIReturnValue<i32> {
     }
 }
 
+/// # Safety
 #[no_mangle]
-pub extern "C" fn yaml_array_get(yaml: *const Yaml, index: i32) -> FFIReturnValue<*const Yaml> {
-    let yaml = unsafe { &*yaml };
-
+pub unsafe extern "C" fn yaml_array_get(
+    yaml: *const Yaml,
+    index: i32,
+) -> FFIReturnValue<*const Yaml> {
     if let Yaml::Array(ref a) = *yaml {
         if let Some(result) = a.get(index as usize) {
-            let yaml_ptr = unsafe { transmute(Box::new(result.clone())) };
+            let yaml_ptr = Box::into_raw(Box::new(result.clone()));
 
             FFIReturnValue {
                 value: yaml_ptr,

@@ -33,14 +33,7 @@ lazy_static! {
 }
 
 pub fn is_keyword(string: &str) -> bool {
-    match string {
-        "if" => true,
-        "then" => true,
-        "elif" => true,
-        "else" => true,
-        "do" => true,
-        _ => false,
-    }
+    matches!(string, "if" | "then" | "elif" | "else" | "do")
 }
 
 pub fn is_operator(string: &str) -> bool {
@@ -85,12 +78,7 @@ pub fn operator_to_exp(operator: &str, exp1: Exp, exp2: Exp) -> Result<Exp, Yaml
 }
 
 pub fn is_split_character(ch: char) -> bool {
-    match ch {
-        ' ' => true,
-        '\n' => true,
-        '\t' => true,
-        _ => false,
-    }
+    matches!(ch, ' ' | '\n' | '\t')
 }
 
 #[cfg(test)]
