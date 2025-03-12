@@ -1,7 +1,7 @@
-use ast::lit::Lit;
-use ast::Op;
-use environment::Environment;
-use errors::{EvalError, YamlError};
+use crate::ast::Op;
+use crate::ast::lit::Lit;
+use crate::environment::Environment;
+use crate::errors::{EvalError, YamlError};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Exp {
@@ -101,8 +101,8 @@ impl Exp {
 
 #[cfg(test)]
 mod tests {
-    use ast::{Exp, Lit, Op};
-    use environment::{ASTEnvironment, Environment};
+    use crate::ast::{Exp, Lit, Op};
+    use crate::environment::{ASTEnvironment, Environment};
 
     #[test]
     fn test_arith_ast() {

@@ -1,8 +1,8 @@
 mod token_builder;
 
-use ast::{Exp, Lit};
-use errors::{LexError, YamlError};
-use lexer::token_builder::append_ch;
+use crate::ast::{Exp, Lit};
+use crate::errors::{LexError, YamlError};
+use crate::lexer::token_builder::append_ch;
 use std::collections::VecDeque;
 
 #[derive(Clone, PartialEq)]
@@ -98,7 +98,7 @@ impl Lexer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ast::{Exp, Lit};
+    use crate::ast::{Exp, Lit};
     use std::collections::VecDeque;
 
     #[test]

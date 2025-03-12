@@ -1,6 +1,6 @@
-use ast::{Exp, Op};
-use errors::{LexError, YamlError};
-use helpers::{operator_precedence, operator_to_exp};
+use crate::ast::{Exp, Op};
+use crate::errors::{LexError, YamlError};
+use crate::helpers::{operator_precedence, operator_to_exp};
 use std::collections::VecDeque;
 
 /// Parses string into AST
@@ -126,8 +126,8 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ast::{Exp, Lit, Op};
-    use errors::{LexError, YamlError};
+    use crate::ast::{Exp, Lit, Op};
+    use crate::errors::{LexError, YamlError};
     use std::collections::VecDeque;
 
     #[test]

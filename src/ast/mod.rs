@@ -16,5 +16,5 @@ pub enum Op {
     NotEqual,
 }
 
-pub use ast::exp::Exp;
-pub use ast::lit::Lit;
+pub use crate::ast::exp::Exp;
+pub use crate::ast::lit::Lit;

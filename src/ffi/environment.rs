@@ -1,62 +1,62 @@
-use ast::Lit;
-use environment::{ASTEnvironment, Environment};
-use ffi::types::{Error, FFIReturnValue};
+use crate::ast::Lit;
+use crate::environment::{ASTEnvironment, Environment};
+use crate::ffi::types::{Error, FFIReturnValue};
 use libc::c_char;
 use std::ffi::{CStr, CString};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn environment_create() -> *mut ASTEnvironment {
     Box::into_raw(Box::new(ASTEnvironment::new()))
 }
 
 /// # Safety
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn environment_set_integer(
     env: *mut ASTEnvironment,
     name: *const c_char,
     value: i32,
 ) {
-    let environment = &mut *env;
-    let key: String = CStr::from_ptr(name).to_string_lossy().into_owned();
+    let environment = unsafe { &mut *env };
+    let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
     environment.set(key.as_str(), Lit::Number(value));
 }
 
 /// # Safety
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn environment_set_string(
     env: *mut ASTEnvironment,
     name: *const c_char,
     value: *const c_char,
 ) {
-    let environment = &mut *env;
-    let key: String = CStr::from_ptr(name).to_string_lossy().into_owned();
-    let val: String = CStr::from_ptr(value).to_string_lossy().into_owned();
+    let environment = unsafe { &mut *env };
+    let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
+    let val: String = unsafe { CStr::from_ptr(value).to_string_lossy().into_owned() };
 
     environment.set(key.as_str(), Lit::Str(val));
 }
 
 /// # Safety
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn environment_set_decimal(
     env: *mut ASTEnvironment,
     name: *const c_char,
     value: f64,
 ) {
-    let environment = &mut *env;
-    let key: String = CStr::from_ptr(name).to_string_lossy().into_owned();
+    let environment = unsafe { &mut *env };
+    let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
     environment.set(key.as_str(), Lit::Decimal(value));
 }
 
 /// # Safety
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn environment_get_integer(
     env: *mut ASTEnvironment,
     name: *const c_char,
 ) -> FFIReturnValue<i32> {
-    let environment = &mut *env;
-    let key: String = CStr::from_ptr(name).to_string_lossy().into_owned();
+    let environment = unsafe { &mut *env };
+    let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
     match environment.get(key.as_str()) {
         Some(Lit::Number(val)) => FFIReturnValue {
@@ -75,13 +75,13 @@ pub unsafe extern "C" fn environment_get_integer(
 }
 
 /// # Safety
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn environment_get_string(
     env: *mut ASTEnvironment,
     name: *const c_char,
 ) -> FFIReturnValue<*const c_char> {
-    let environment = &mut *env;
-    let key: String = CStr::from_ptr(name).to_string_lossy().into_owned();
+    let environment = unsafe { &mut *env };
+    let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
     match environment.get(key.as_str()) {
         Some(Lit::Str(ref val)) => {
@@ -104,13 +104,13 @@ pub unsafe extern "C" fn environment_get_string(
 }
 
 /// # Safety
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn environment_get_decimal(
     env: *mut ASTEnvironment,
     name: *const c_char,
 ) -> FFIReturnValue<f64> {
-    let environment = &mut *env;
-    let key: String = CStr::from_ptr(name).to_string_lossy().into_owned();
+    let environment = unsafe { &mut *env };
+    let key: String = unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() };
 
     match environment.get(key.as_str()) {
         Some(Lit::Decimal(val)) => FFIReturnValue {
@@ -129,7 +129,7 @@ pub unsafe extern "C" fn environment_get_decimal(
 }
 
 /// # Safety
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn environment_destroy(env: *mut ASTEnvironment) {
-    drop(Box::from_raw(env))
+    drop(unsafe { Box::from_raw(env) })
 }

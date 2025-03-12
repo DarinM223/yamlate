@@ -1,9 +1,9 @@
-use ast::{Exp, Lit};
-use environment::Environment;
-use errors::YamlError;
-use lexer::Lexer;
+use crate::ast::{Exp, Lit};
+use crate::environment::Environment;
+use crate::errors::YamlError;
+use crate::lexer::Lexer;
+use crate::parser::Parser;
 use linked_hash_map::LinkedHashMap;
-use parser::Parser;
 use yaml_rust::yaml::Yaml;
 
 #[derive(Debug, PartialEq)]
@@ -108,14 +108,14 @@ fn apply_keyword(
                         // applies logic based on the type of keyword
                         match s {
                             "if" => {
-                                return apply_nested_if_keywords(h, prop_str.clone().as_str(), env)
+                                return apply_nested_if_keywords(h, prop_str.clone().as_str(), env);
                             }
                             "while" => {
                                 return apply_nested_while_keywords(
                                     h,
                                     prop_str.clone().as_str(),
                                     env,
-                                )
+                                );
                             }
                             _ => {}
                         }
@@ -203,10 +203,10 @@ pub fn evaluate(yaml: &Yaml, env: &mut dyn Environment) -> Result<Yaml, YamlErro
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ast::Lit;
-    use environment::{ASTEnvironment, Environment};
-    use yaml_rust::yaml::Yaml;
+    use crate::ast::Lit;
+    use crate::environment::{ASTEnvironment, Environment};
     use yaml_rust::YamlLoader;
+    use yaml_rust::yaml::Yaml;
 
     #[test]
     fn test_yaml_eval() {

@@ -1,4 +1,4 @@
-use ast::lit::Lit;
+use crate::ast::lit::Lit;
 use std::collections::HashMap;
 
 pub trait Environment {
@@ -99,7 +99,7 @@ impl Environment for ASTEnvironment {
 #[cfg(test)]
 mod tests {
     use super::{ASTEnvironment, Environment};
-    use ast::Lit;
+    use crate::ast::Lit;
 
     #[test]
     fn test_bad_value_empty_stack() {

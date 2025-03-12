@@ -1,7 +1,7 @@
-use ast::{Exp, Lit};
-use errors::{LexError, YamlError};
-use helpers::is_operator;
-use lexer::{LexerState, WordState};
+use crate::ast::{Exp, Lit};
+use crate::errors::{LexError, YamlError};
+use crate::helpers::is_operator;
+use crate::lexer::{LexerState, WordState};
 
 /// TokenBuilder is used by the lexer to apply certain actions to the LexerState through
 /// adding a new character
@@ -26,7 +26,7 @@ impl TokenBuilder for LetterBuilder {
             WordState::Variable | WordState::String => state.curr_chars.push(ch),
 
             WordState::Number | WordState::Decimal => {
-                return Err(YamlError::LexError(LexError::LetterAfterNumber))
+                return Err(YamlError::LexError(LexError::LetterAfterNumber));
             }
 
             WordState::Operator => {
@@ -152,7 +152,7 @@ impl TokenBuilder for DotBuilder {
             }
 
             WordState::Operator | WordState::Decimal | WordState::Variable | WordState::None => {
-                return Err(YamlError::LexError(LexError::InvalidDotAppend))
+                return Err(YamlError::LexError(LexError::InvalidDotAppend));
             }
         }
 

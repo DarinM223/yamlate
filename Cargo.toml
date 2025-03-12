@@ -5,6 +5,7 @@ authors = ["Darin Minamoto <darinm223@gmail.com>"]
 description = "A cross-language interpreter library that dynamically evaluates YAML attributes given variable bindings"
 repository = "https://github.com/DarinM223/yamlate"
 readme = "README.md"
+edition = "2024"
 
 keywords = ["yaml", "library", "interpreter"]
 

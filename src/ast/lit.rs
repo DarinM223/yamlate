@@ -1,6 +1,6 @@
 use self::Lit::*;
-use ast::Op;
-use errors::{EvalError, YamlError};
+use crate::ast::Op;
+use crate::errors::{EvalError, YamlError};
 use std::ops::{Add, Div, Mul, Not, Rem, Sub};
 
 #[derive(Debug, PartialEq, Clone, PartialOrd)]

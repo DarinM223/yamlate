@@ -1,5 +1,5 @@
-use ast::{Exp, Op};
-use errors::{LexError, YamlError};
+use crate::ast::{Exp, Op};
+use crate::errors::{LexError, YamlError};
 use std::collections::HashMap;
 
 lazy_static! {
