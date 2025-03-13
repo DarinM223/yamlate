@@ -16,7 +16,7 @@ pub enum YamlType {
 fn apply_nested_while_keywords(
     h: &LinkedHashMap<Yaml, Yaml>,
     prop_str: &str,
-    env: &mut dyn Environment,
+    env: &mut impl Environment,
 ) -> Result<YamlType, YamlError> {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
@@ -47,7 +47,7 @@ fn apply_nested_while_keywords(
 fn apply_nested_if_keywords(
     h: &LinkedHashMap<Yaml, Yaml>,
     prop_str: &str,
-    env: &mut dyn Environment,
+    env: &mut impl Environment,
 ) -> Result<YamlType, YamlError> {
     for (key, val) in h {
         if let Yaml::String(ref keyword) = *key {
@@ -83,7 +83,7 @@ fn apply_keyword(
     s: &str,
     _k: &Yaml,
     v: &Yaml,
-    env: &mut dyn Environment,
+    env: &mut impl Environment,
 ) -> Result<YamlType, YamlError> {
     match s {
         "while" | "if" => {
@@ -137,7 +137,7 @@ fn apply_keyword(
 }
 
 // evaluates the result of a fragment of YAML
-fn evaluate_helper(yaml: &Yaml, env: &mut dyn Environment) -> Result<YamlType, YamlError> {
+fn evaluate_helper(yaml: &Yaml, env: &mut impl Environment) -> Result<YamlType, YamlError> {
     match *yaml {
         Yaml::String(ref s) => {
             if s.as_str().contains("~>") {
@@ -191,7 +191,7 @@ fn evaluate_helper(yaml: &Yaml, env: &mut dyn Environment) -> Result<YamlType, Y
 }
 
 // Main function for evaluating YAML
-pub fn evaluate(yaml: &Yaml, env: &mut dyn Environment) -> Result<Yaml, YamlError> {
+pub fn evaluate(yaml: &Yaml, env: &mut impl Environment) -> Result<Yaml, YamlError> {
     let result = evaluate_helper(yaml, env)?;
 
     Ok(match result {

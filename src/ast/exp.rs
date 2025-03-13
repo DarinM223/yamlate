@@ -21,7 +21,7 @@ pub enum Exp {
 
 impl Exp {
     /// Evaluates a expression and returns a Result type wrapping an expression
-    pub fn eval(&self, env: &mut dyn Environment) -> Result<Exp, YamlError> {
+    pub fn eval(&self, env: &mut impl Environment) -> Result<Exp, YamlError> {
         match *self {
             Exp::Variable(ref name) => match env.get(name.as_str()) {
                 Some(lit) => Ok(Exp::Lit(lit)),
