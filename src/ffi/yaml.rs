@@ -43,13 +43,13 @@ pub unsafe extern "C" fn yaml_evaluate(
     yaml: *const Yaml,
     env: *mut ASTEnvironment,
 ) -> FFIReturnValue<*const Yaml> {
-    if let (Some(yaml), Some(environment)) = unsafe { (yaml.as_ref(), env.as_mut()) } {
-        if let Ok(result) = evaluate(yaml, environment) {
-            return FFIReturnValue {
-                value: Box::into_raw(Box::new(result)),
-                error: Error::None as i32,
-            };
-        }
+    if let (Some(yaml), Some(environment)) = unsafe { (yaml.as_ref(), env.as_mut()) }
+        && let Ok(result) = evaluate(yaml, environment)
+    {
+        return FFIReturnValue {
+            value: Box::into_raw(Box::new(result)),
+            error: Error::None as i32,
+        };
     }
 
     FFIReturnValue {

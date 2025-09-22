@@ -1,3 +1,4 @@
+from __future__ import annotations
 import ffi_types
 
 """
@@ -7,22 +8,22 @@ Python library bindings for yaml_embed C FFI
 
 class WrongTypeError(Exception):
     def __str__(self):
-        return 'Wrong type error with Yamlate FFI API'
+        return "Wrong type error with Yamlate FFI API"
 
 
 class NotDefinedError(Exception):
     def __str__(self):
-        return 'Not defined error with Yamlate FFI API'
+        return "Not defined error with Yamlate FFI API"
 
 
 class InvalidStringError(Exception):
     def __str__(self):
-        return 'Invalid string error with Yamlate FFI API'
+        return "Invalid string error with Yamlate FFI API"
 
 
 class EvaluationError(Exception):
     def __str__(self):
-        return 'Error evaluating expression with Yamlate FFI API'
+        return "Error evaluating expression with Yamlate FFI API"
 
 
 def handle_ffi_error(code):
@@ -41,7 +42,7 @@ class Environment:
         self.environment = environment
         self.lib = lib
 
-    def set_integer(self, key, val):
+    def set_integer(self, key: bytes, val: int) -> None:
         """
         Sets an integer in the environment
         :param string: key
@@ -49,7 +50,7 @@ class Environment:
         """
         self.lib.environment_set_integer(self.environment, key, val)
 
-    def set_decimal(self, key, val):
+    def set_decimal(self, key: bytes, val: float) -> None:
         """
         Sets decimal in the environment
         :param string: key
@@ -57,7 +58,7 @@ class Environment:
         """
         self.lib.environment_set_decimal(self.environment, key, val)
 
-    def set_string(self, key, val):
+    def set_string(self, key: bytes, val: bytes) -> None:
         """
         Sets string in the environment
         :param string: key
@@ -65,7 +66,7 @@ class Environment:
         """
         self.lib.environment_set_string(self.environment, key, val)
 
-    def get_integer(self, key):
+    def get_integer(self, key: bytes) -> int:
         """
         Gets an integer in the environment
         :param string: key
@@ -77,7 +78,7 @@ class Environment:
 
         return result.value
 
-    def get_decimal(self, key):
+    def get_decimal(self, key: bytes) -> float:
         """
         Gets an decimal in the environment
         :param string: key
@@ -89,7 +90,7 @@ class Environment:
 
         return result.value
 
-    def get_string(self, key):
+    def get_string(self, key: bytes) -> bytes:
         """
         Gets an string in the environment
         :param string: key
@@ -107,16 +108,16 @@ class Yaml:
         self.yaml = yaml
         self.lib = lib
 
-    def type(self):
+    def type(self) -> int:
         return self.lib.yaml_type(self.yaml)
 
-    def evaluate(self, env):
+    def evaluate(self, env: Environment) -> CopyYaml:
         result = self.lib.yaml_evaluate(self.yaml, env.environment)
         if result.error != ffi_types.ErrorCode.ERROR_NONE:
             handle_ffi_error(result.error)
         return CopyYaml(self.lib, result.value)
 
-    def get_integer(self):
+    def get_integer(self) -> int:
         result = self.lib.yaml_integer_get(self.yaml)
         if result.error != ffi_types.ErrorCode.ERROR_NONE:
             handle_ffi_error(result.error)
@@ -130,14 +131,14 @@ class Yaml:
 
         return result.value
 
-    def get_string(self):
+    def get_string(self) -> bytes:
         result = self.lib.yaml_string_get(self.yaml)
         if result.error != ffi_types.ErrorCode.ERROR_NONE:
             handle_ffi_error(result.error)
 
         return result.value
 
-    def hash_keys(self):
+    def hash_keys(self) -> list[bytes]:
         result = self.lib.yaml_hash_keys(self.yaml)
         if result.error != ffi_types.ErrorCode.ERROR_NONE:
             handle_ffi_error(result.error)
@@ -148,20 +149,20 @@ class Yaml:
 
         return ret_value
 
-    def hash_get(self, key):
+    def hash_get(self, key: bytes) -> CopyYaml:
         result = self.lib.yaml_hash_get(self.yaml, key)
         if result.error != ffi_types.ErrorCode.ERROR_NONE:
             handle_ffi_error(result.error)
 
         return CopyYaml(self.lib, result.value)
 
-    def array_len(self):
+    def array_len(self) -> int:
         result = self.lib.yaml_array_len(self.yaml)
         if result.error != ffi_types.ErrorCode.ERROR_NONE:
             handle_ffi_error(result.error)
         return result.value
 
-    def array_get(self, index):
+    def array_get(self, index: int) -> CopyYaml:
         result = self.lib.yaml_array_get(self.yaml, index)
         if result.error != ffi_types.ErrorCode.ERROR_NONE:
             handle_ffi_error(result.error)
@@ -182,7 +183,7 @@ class NewEnv:
 
 
 class NewYaml:
-    def __init__(self, lib, s):
+    def __init__(self, lib, s: bytes):
         self.lib = lib
         self.yaml_str = s
 
@@ -221,8 +222,8 @@ class Yamlate:
         self.lib = lib
         ffi_types.ffi_function_signatures(self.lib)
 
-    def new_environment(self):
+    def new_environment(self) -> NewEnv:
         return NewEnv(self.lib)
 
-    def new_yaml_from_str(self, s):
+    def new_yaml_from_str(self, s: bytes) -> NewYaml:
         return NewYaml(self.lib, s)

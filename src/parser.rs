@@ -84,14 +84,13 @@ impl Parser {
             let operator = operators.pop_back().unwrap();
 
             if !self.op_stack.is_empty() {
-                if let Some(front_operator) = self.op_stack.front() {
-                    if operator_precedence(operator.as_str())
+                if let Some(front_operator) = self.op_stack.front()
+                    && operator_precedence(operator.as_str())
                         < operator_precedence(front_operator.as_str())
-                        && operator_precedence(operator.as_str()) != -1
-                    {
-                        lower_precedence = true;
-                        op_precedence = operator_precedence(operator.as_str());
-                    }
+                    && operator_precedence(operator.as_str()) != -1
+                {
+                    lower_precedence = true;
+                    op_precedence = operator_precedence(operator.as_str());
                 }
             }
 

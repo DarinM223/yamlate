@@ -9,32 +9,36 @@ You also need to be in the python/ directory
 """
 
 # load correct library depending on operating system
-if os.uname()[0] == 'Darwin':
-    lib = ctypes.cdll.LoadLibrary('../target/release/libyamlate.dylib')
+if os.uname()[0] == "Darwin":
+    lib = ctypes.cdll.LoadLibrary("../target/release/libyamlate.dylib")
 else:
-    lib = ctypes.cdll.LoadLibrary('../target/release/libyamlate.so')
+    lib = ctypes.cdll.LoadLibrary("../target/release/libyamlate.so")
 
 yamlate = Yamlate(lib)
 
 with yamlate.new_environment() as environment:
-    environment.set_integer(b'another_beetle_nearby', 1)
-    environment.set_string(b'current_season', b'spring')
+    environment.set_integer(b"another_beetle_nearby", 1)
+    environment.set_string(b"current_season", b"spring")
 
-    with open('../examples/bug.yaml', 'r') as yaml_file:
-        data = yaml_file.read().encode('utf-8')
+    with open("../examples/bug.yaml", "r") as yaml_file:
+        data = yaml_file.read().encode("utf-8")
 
         with yamlate.new_yaml_from_str(data) as root_yaml:
-            with root_yaml.hash_get(b'cricket') as cricket_yaml:
-                with cricket_yaml.hash_get(b'wing_color') as wing_yaml:
-                    with wing_yaml.evaluate(environment) as cricket_wing_result:
-                        # should print 'red'
-                        print(cricket_wing_result.get_string())
+            with (
+                root_yaml.hash_get(b"cricket") as cricket_yaml,
+                cricket_yaml.hash_get(b"wing_color") as wing_yaml,
+                wing_yaml.evaluate(environment) as cricket_wing_result,
+            ):
+                # should print 'red'
+                print(cricket_wing_result.get_string())
 
-            with root_yaml.hash_get(b'beetle') as beetle_yaml:
-                with beetle_yaml.hash_get(b'wing_color') as wing_yaml:
-                    with wing_yaml.evaluate(environment) as beetle_wing_result:
-                        # should print 'blue'
-                        print(beetle_wing_result.get_string())
+            with (
+                root_yaml.hash_get(b"beetle") as beetle_yaml,
+                beetle_yaml.hash_get(b"wing_color") as wing_yaml,
+                wing_yaml.evaluate(environment) as beetle_wing_result,
+            ):
+                # should print 'blue'
+                print(beetle_wing_result.get_string())
 
-                        # should print '0'
-                        print(environment.get_integer(b'another_beetle_nearby'))
+                # should print '0'
+                print(environment.get_integer(b"another_beetle_nearby"))

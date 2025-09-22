@@ -19,22 +19,22 @@ fn apply_nested_while_keywords(
     env: &mut impl Environment,
 ) -> Result<YamlType, YamlError> {
     for (key, val) in h {
-        if let Yaml::String(ref keyword) = *key {
-            if keyword.as_str() == "do" {
-                loop {
-                    // check proposition if true
-                    let result = evaluate_helper(&Yaml::String(prop_str.to_owned()), env)?;
-                    if result == YamlType::Value(Yaml::Boolean(false)) {
-                        break;
-                    }
-
-                    env.push();
-
-                    // evaluate commands inside do block
-                    evaluate_helper(val, env)?;
-
-                    env.pop();
+        if let Yaml::String(ref keyword) = *key
+            && keyword.as_str() == "do"
+        {
+            loop {
+                // check proposition if true
+                let result = evaluate_helper(&Yaml::String(prop_str.to_owned()), env)?;
+                if result == YamlType::Value(Yaml::Boolean(false)) {
+                    break;
                 }
+
+                env.push();
+
+                // evaluate commands inside do block
+                evaluate_helper(val, env)?;
+
+                env.pop();
             }
         }
     }

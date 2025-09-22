@@ -10,43 +10,46 @@ You also need to be in the python/ directory
 """
 
 # load correct library depending on operating system
-if os.uname()[0] == 'Darwin':
-    lib = ctypes.cdll.LoadLibrary('../target/release/libyamlate.dylib')
+if os.uname()[0] == "Darwin":
+    lib = ctypes.cdll.LoadLibrary("../target/release/libyamlate.dylib")
 else:
-    lib = ctypes.cdll.LoadLibrary('../target/release/libyamlate.so')
+    lib = ctypes.cdll.LoadLibrary("../target/release/libyamlate.so")
 yamlate = Yamlate(lib)
 
 with yamlate.new_environment() as environment:
-    environment.set_integer(b'hello', 2)
-    environment.set_string(b'world', b'blah')
-    environment.set_decimal(b'blah', 3.14)
+    environment.set_integer(b"hello", 2)
+    environment.set_string(b"world", b"blah")
+    environment.set_decimal(b"blah", 3.14)
 
     # should print 'blah'
-    print('Environment value for \'world\':', environment.get_string(b'world'))
+    print("Environment value for 'world':", environment.get_string(b"world"))
     # should print '2'
-    print('Environment value for \'hello\':', environment.get_integer(b'hello'))
+    print("Environment value for 'hello':", environment.get_integer(b"hello"))
     # should print '3.14'
-    print('Environment value for \'blah\':', environment.get_decimal(b'blah'))
+    print("Environment value for 'blah':", environment.get_decimal(b"blah"))
 
-    with open('../examples/example.yaml', 'r') as yaml_file:
-        data = yaml_file.read().encode('utf-8')
+    with open("../examples/example.yaml", "r") as yaml_file:
+        data = yaml_file.read().encode("utf-8")
 
         with yamlate.new_yaml_from_str(data) as root_yaml:
-            with root_yaml.hash_get(b'blah') as blah_yaml:
-                print('Blah\'s type:', ffi_types.yaml_type_to_str(blah_yaml.type()))
+            with root_yaml.hash_get(b"blah") as blah_yaml:
+                print("Blah's type:", ffi_types.yaml_type_to_str(blah_yaml.type()))
                 # should print '2'
-                print('Blah\'s value:', blah_yaml.get_integer())
+                print("Blah's value:", blah_yaml.get_integer())
 
-            with root_yaml.hash_get(b'foo') as foo_yaml:
-                print('Foo\'s type:', ffi_types.yaml_type_to_str(foo_yaml.type()))
-                print('Foo array length:', foo_yaml.array_len())
+            with root_yaml.hash_get(b"foo") as foo_yaml:
+                print("Foo's type:", ffi_types.yaml_type_to_str(foo_yaml.type()))
+                print("Foo array length:", foo_yaml.array_len())
                 with foo_yaml.array_get(0) as sub_yaml:
-                    print('Foo\'s first array element type:', ffi_types.yaml_type_to_str(sub_yaml.type()))
+                    print(
+                        "Foo's first array element type:",
+                        ffi_types.yaml_type_to_str(sub_yaml.type()),
+                    )
 
                 with foo_yaml.evaluate(environment) as result:
                     # should print '10
-                    print('Foo\'s value:', result.get_integer())
+                    print("Foo's value:", result.get_integer())
 
-            print('Root\'s type:', ffi_types.yaml_type_to_str(root_yaml.type()))
+            print("Root's type:", ffi_types.yaml_type_to_str(root_yaml.type()))
             # should print ['blah', 'foo']
-            print('Root keys:', root_yaml.hash_keys())
+            print("Root keys:", root_yaml.hash_keys())
